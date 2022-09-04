@@ -1,0 +1,16 @@
+kind: EgressGateway
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: global-egress-gateway
+  namespace: curl
+spec:
+  global:
+    - service: egress-gateway
+      namespace: egress-gateway
+  rules:
+    - egressPolicies:
+        - name: httpbin-80
+          namespace: curl
+      egressGateways:
+        - service: egress-gateway
+          namespace: egress-gateway
