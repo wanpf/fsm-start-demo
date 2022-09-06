@@ -30,4 +30,4 @@ sleep 5
 kubectl wait --for=condition=ready pod -n udp-demo -l app=udp-echo --timeout=180s
 kubectl wait --for=condition=ready pod -n udp-demo -l app=udp-client --timeout=180s
 
-kubectl logs "$(kubectl get pod -n udp-demo -l app=udp-echo-v1 -o jsonpath='{.items..metadata.name}')" -n udp-demo -c udp-echo-server -f
+kubectl logs "$(kubectl get pod -n udp-demo -l app=udp-echo,version=v1 -o jsonpath='{.items..metadata.name}')" -n udp-demo -c udp-echo-server -f

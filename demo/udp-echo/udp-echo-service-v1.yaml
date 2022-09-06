@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: udp-echo-v1
+  namespace: udp-demo
+  labels:
+    app: udp-echo
+    version: v1
+spec:
+  ports:
+    - name: udp
+      port: 6000
+      appProtocol: udp
+      protocol: UDP
+  selector:
+    app: udp-echo
+    version: v1

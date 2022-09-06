@@ -35,6 +35,6 @@ spec:
   service: udp-echo
   backends:
     - service: udp-echo-v1
-      weight: 40
+      weight: 25
     - service: udp-echo-v2
-      weight: 60
+      weight: 75
