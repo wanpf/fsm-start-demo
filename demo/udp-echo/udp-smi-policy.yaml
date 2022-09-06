@@ -1,0 +1,40 @@
+apiVersion: specs.smi-spec.io/v1alpha4
+kind: UDPRoute
+metadata:
+  name: udp-echo
+  namespace: udp-demo
+spec:
+  matches:
+    ports:
+      - 6000
+---
+kind: TrafficTarget
+apiVersion: access.smi-spec.io/v1alpha3
+metadata:
+  name: udp-echo
+  namespace: udp-demo
+spec:
+  destination:
+    kind: ServiceAccount
+    name: udp-echo
+    namespace: udp-demo
+  rules:
+    - kind: UDPRoute
+      name: udp-echo
+  sources:
+    - kind: ServiceAccount
+      name: udp-client
+      namespace: udp-demo
+---
+apiVersion: split.smi-spec.io/v1alpha2
+kind: TrafficSplit
+metadata:
+  name: udp-echo-split
+  namespace: udp-demo
+spec:
+  service: udp-echo
+  backends:
+    - service: udp-echo-v1
+      weight: 40
+    - service: udp-echo-v2
+      weight: 60
