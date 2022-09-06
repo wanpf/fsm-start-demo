@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udp-client-v1
+  namespace: udp-demo
+  labels:
+    app: udp-client
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: udp-client
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: udp-client
+        version: v1
+    spec:
+      serviceAccountName: udp-client
+      containers:
+        - name: tcp-client
+          image: "cybwan/osm-edge-demo-udp-client:latest"
+          imagePullPolicy: Always
+          command: ["/udp-client"]
+          args: [ "udp-echo", "6000", "hello world."]

@@ -14,3 +14,6 @@ OSM_HOME ?= $(abspath ../osm-edge)
 
 egress-gateway:
 	scripts/deploy-egress-gateway-demo.sh
+
+udp-echo:
+	scripts/deploy-udp-echo-demo.sh
