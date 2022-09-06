@@ -20,7 +20,7 @@ spec:
     spec:
       serviceAccountName: udp-client
       containers:
-        - name: tcp-client
+        - name: udp-client
           image: "cybwan/osm-edge-demo-udp-client:latest"
           imagePullPolicy: Always
           command: ["/udp-client"]
