@@ -18,7 +18,7 @@ kubectl apply -f demo/udp-echo/udp-echo-deployment.yaml -n udp-demo
 kubectl apply -f demo/udp-echo/udp-client-rbac.yaml -n udp-demo
 kubectl apply -f demo/udp-echo/udp-client-deployment.yaml -n udp-demo
 
-sleep 10
+sleep 5
 
 kubectl wait --for=condition=ready pod -n udp-demo -l app=udp-echo --timeout=180s
 kubectl wait --for=condition=ready pod -n udp-demo -l app=udp-client --timeout=180s
