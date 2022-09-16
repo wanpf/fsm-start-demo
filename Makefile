@@ -17,3 +17,6 @@ egress-gateway:
 
 udp-echo:
 	scripts/deploy-udp-echo-demo.sh
+
+ingress-nginx:
+	scripts/deploy-ingress-nginx-demo.sh

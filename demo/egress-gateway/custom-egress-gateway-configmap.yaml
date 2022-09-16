@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: egress-gateway-pjs
+  name: custom-egress-gateway-pjs
   namespace: egress-gateway
   labels:
-    app: egress-gateway
+    app: custom-egress-gateway
 data:
   pipy-sock.js: |
     // version: '2022.09.03'
