@@ -51,11 +51,11 @@ osm install \
 #模拟业务服务
 kubectl create namespace httpbin
 osm namespace add httpbin
-kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/access-control/httpbin.yaml
+kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/httpbin.yaml
 
 #模拟外部客户端
 kubectl create namespace curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/access-control/curl.yaml
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/curl.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
