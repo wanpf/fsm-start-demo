@@ -1,7 +1,8 @@
 
-# OSM Edge Access Control Test
 
-## 1. Download and install the `osm-edge` command line tool
+# OSM Edge访问控制策略测试
+
+## 1. 下载并安装 osm-edge 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
@@ -12,7 +13,7 @@ curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
 
-## 2. Install `osm-edge` Service Mesh
+## 2. 安装 osm-edge
 
 ```bash
 export osm_namespace=osm-system 
@@ -31,47 +32,46 @@ osm install \
     --timeout=900s
 ```
 
-## 3. Access Control Policy Testing
+## 3. 访问控制策略测试
 
-### 3.1 Technical concepts
+### 3.1 技术概念
 
-To access `osm-edge` service mesh managed services from non mesh, you are provided with two methods:
+在 OSM Edge 中从未被 OSM Edge 纳管的区域访问被 OSM Edge 纳管的区域，有两种方法：
 
-- **Ingress** currently supported by the Ingress Controller.
+- Ingress，目前支持的 Ingress Controller：
   - FSM Pipy Ingress
   - Nginx Ingress
-- **Access Control** which supports two access source types:
+- Access Control，支持两种访问源类型：
   - Service
   - IPRange
 
-
-### 3.2 Deploy business POD
+### 3.2 部署业务 POD
 
 ```bash
-#Simulate business service
+#模拟业务服务
 kubectl create namespace httpbin
 osm namespace add httpbin
 kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/access-control/httpbin.yaml
 
-#Simulate external client
+#模拟外部客户端
 kubectl create namespace curl
 kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/access-control/curl.yaml
 
-#Wait for the dependent POD to start normally
+#等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```
 
-### 3.3 Scenario test case#1: service-based access control
+### 3.3 场景测试一：基于服务的访问控制
 
-#### 3.3.1 Enabling access control policies
+#### 3.3.1 启用访问控制策略
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
 ```
 
-#### 3.3.2 Setting up service-based access control policies
+#### 3.3.2 设置基于服务的访问控制策略
 
 ```bash
 export osm_namespace=osm-system
@@ -94,15 +94,15 @@ spec:
 EOF
 ```
 
-#### 3.3.3 Test commands
+#### 3.3.3 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -- curl -sI http://httpbin.httpbin:14001/get
 ```
 
-#### 3.3.4 Test Results
+#### 3.3.4 测试结果
 
-The correct return result might look similar to :
+正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
@@ -119,7 +119,7 @@ osm-stats-pod: httpbin-7c6464475-cf4qc
 connection: keep-alive
 ```
 
-This business scenario is tested and the strategy is cleaned up to avoid affecting subsequent tests
+本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
 kubeexport osm_namespace=osm-system
@@ -127,16 +127,16 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 kubectl delete accesscontrol -n httpbin httpbin
 ```
 
-### 3.4 Scenario test case#2: IP range-based access control
+### 3.4 场景测试二：基于IP范围的访问控制
 
-#### 3.4.1 Enabling access control policies
+#### 3.4.1 启用访问控制策略
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
 ```
 
-#### 3.4.2 Setting IP range-based access control policies
+#### 3.4.2 设置基于IP范围的访问控制策略
 
 ```bash
 export osm_namespace=osm-system
@@ -158,15 +158,15 @@ spec:
 EOF
 ```
 
-#### 3.4.3 Test commands
+#### 3.4.3 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -- curl -sI http://httpbin.httpbin:14001/get
 ```
 
-#### 3.4.4 Test Results
+#### 3.4.4 测试结果
 
-The correct return result might look similar to :
+正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
@@ -183,10 +183,11 @@ osm-stats-pod: httpbin-7c6464475-cf4qc
 connection: keep-alive
 ```
 
-This business scenario is tested and the strategy is cleaned up to avoid affecting subsequent tests
+本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
 kubeexport osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
 kubectl delete accesscontrol -n httpbin httpbin
 ```
+
