@@ -1,4 +1,4 @@
-# OSM Edge Ingress&Egress 测试
+# OSM Edge Egress 测试
 
 ## 1. 下载并安装 osm-edge 命令行工具
 
@@ -11,7 +11,7 @@ curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge&FSM Ingress
+## 2. 安装 osm-edge
 
 ```bash
 export osm_namespace=osm-system 
@@ -27,99 +27,12 @@ osm install \
     --set=osm.enableEgress=false \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
-    --set=fsm.enabled=true \
     --timeout=900s
 ```
 
-## 3. Ingress 测试
+## 3. Egress 测试
 
-### 3.1 部署业务 POD
-
-```bash
-#模拟业务服务
-kubectl create namespace httpbin
-osm namespace add httpbin
-kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/ingress-fsm/httpbin.yaml
-
-#模拟外部客户端
-kubectl create namespace ext-curl
-kubectl apply -n ext-curl -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/egress-gateway/curl.yaml
-
-#等待依赖的 POD 正常启动
-kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
-kubectl wait --for=condition=ready pod -n ext-curl -l app=curl --timeout=180s
-```
-
-### 3.2 设置 Ingress 策略
-
-```bash
-export osm_namespace=osm-system
-kubectl apply -f - <<EOF
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: httpbin
-  namespace: httpbin
-spec:
-  ingressClassName: pipy
-  rules:
-  - host: httpbin.org
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: httpbin
-            port:
-              number: 14001      
----
-kind: IngressBackend
-apiVersion: policy.openservicemesh.io/v1alpha1
-metadata:
-  name: httpbin
-  namespace: httpbin
-spec:
-  backends:
-  - name: httpbin
-    port:
-      number: 14001 # targetPort of httpbin service
-      protocol: http
-  sources:
-  - kind: Service
-    namespace: "$osm_namespace"
-    name: fsm-ingress-pipy-controller
-EOF
-```
-
-### 3.3 测试指令
-
-```bash
-kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://fsm-ingress-pipy-controller.osm-system:80/get -H "Host: httpbin.org"
-```
-
-### 3.4 测试结果
-
-正确返回结果类似于:
-
-```bash
-HTTP/1.1 200 OK
-server: gunicorn/19.9.0
-date: Fri, 16 Sep 2022 10:44:13 GMT
-content-type: application/json
-content-length: 247
-access-control-allow-origin: *
-access-control-allow-credentials: true
-osm-stats-namespace: httpbin
-osm-stats-kind: Deployment
-osm-stats-name: httpbin
-osm-stats-pod: httpbin-7c6464475-pz5gf
-connection: keep-alive
-```
-
-## 4. Egress 测试
-
-### 4.1 技术概念
+### 3.1 技术概念
 
 在 OSM Edge 中 Egress 的策略有两类:
 
@@ -138,9 +51,9 @@ connection: keep-alive
 - 目的宽松模式+全局出口代理网关
 - 目的策略模式+全局出口代理网关
 
-### 4.2 测试环境要求
+### 3.2 测试环境要求
 
-#### 4.2.1 部署业务 POD
+#### 3.2.1 部署业务 POD
 
 ```bash
 kubectl create namespace curl
@@ -148,7 +61,7 @@ osm namespace add curl
 kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/egress-gateway/curl.yaml
 ```
 
-#### 4.2.2 部署全局出口代理网关
+#### 3.2.2 部署全局出口代理网关
 
 ```bash
 #忽略可能的重复创建 namespace 错误
@@ -159,29 +72,29 @@ kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-
 kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-demo-v1.2/main/demo/egress-gateway/global-egress-gateway-deployment.yaml
 ```
 
-#### 4.2.3 等待依赖的 POD 正常启动
+#### 3.2.3 等待依赖的 POD 正常启动
 
 ```bash
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 kubectl wait --for=condition=ready pod -n egress-gateway -l app=global-egress-gateway --timeout=180s
 ```
 
-### 4.3 场景测试一：目的宽松模式+边车透传
+### 3.3 场景测试一：目的宽松模式+边车透传
 
-#### 4.3.1 禁用Egress目的宽松模式
+#### 3.3.1 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.3.2 测试指令
+#### 3.3.2 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://httpbin.org:80/get
 ```
 
-#### 4.3.3 测试结果
+#### 3.3.3 测试结果
 
 正确返回结果:
 
@@ -189,20 +102,20 @@ kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metada
 command terminated with exit code 52
 ```
 
-#### 4.3.4  启用Egress目的宽松模式
+#### 3.3.4  启用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
 ```
 
-#### 4.3.5 测试指令
+#### 3.3.5 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://httpbin.org:80/get
 ```
 
-#### 4.3.6 测试结果
+#### 3.3.6 测试结果
 
 正确返回结果类似于:
 
@@ -224,22 +137,22 @@ export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-### 4.4 场景测试二：目的策略模式+边车透传
+### 3.4 场景测试二：目的策略模式+边车透传
 
-#### 4.4.1 启用Egress目的策略模式
+#### 3.4.1 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-#### 4.4.2 测试指令
+#### 3.4.2 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://httpbin.org:80/get
 ```
 
-#### 4.4.3 测试结果
+#### 3.4.3 测试结果
 
 正确返回结果:
 
@@ -247,7 +160,7 @@ kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metada
 command terminated with exit code 52
 ```
 
-#### 4.4.4 设置Egress目的策略
+#### 3.4.4 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -269,13 +182,13 @@ spec:
 EOF
 ```
 
-#### 4.4.5 测试指令
+#### 3.4.5 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://httpbin.org:80/get
 ```
 
-#### 4.4.6 测试结果
+#### 3.4.6 测试结果
 
 正确返回结果类似于:
 
@@ -290,13 +203,13 @@ access-control-allow-credentials: true
 connection: keep-alive
 ```
 
-#### 4.4.7 测试指令
+#### 3.4.7 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://edition.cnn.com?test=4.4.7
 ```
 
-#### 4.4.8 测试结果
+#### 3.4.8 测试结果
 
 该请求没有对应的目的策略，边车将直接拒绝，正确返回结果类似于:
 
@@ -312,16 +225,16 @@ connection: keep-alive
 kubectl delete egress -n curl httpbin-80
 ```
 
-### 4.5 场景测试三：目的宽松模式+全局出口代理网关
+### 3.5 场景测试三：目的宽松模式+全局出口代理网关
 
-#### 4.5.1 启用Egress目的宽松模式
+#### 3.5.1 启用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
 ```
 
-#### 4.5.2 设置全局出口代理网关策略
+#### 3.5.2 设置全局出口代理网关策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -337,13 +250,13 @@ spec:
 EOF
 ```
 
-#### 4.5.3 测试指令
+#### 3.5.3 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://edition.cnn.com?test=4.5.3
 ```
 
-#### 4.5.4 测试结果
+#### 3.5.4 测试结果
 
 正确返回结果类似于:
 
@@ -401,23 +314,23 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traff
 kubectl delete egressgateways -n egress-gateway global-egress-gateway
 ```
 
-### 4.6 场景测试四：目的策略模式+全局出口代理网关
+### 3.6 场景测试四：目的策略模式+全局出口代理网关
 
-#### 4.6.1 禁用Egress目的宽松模式
+#### 3.6.1 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.6.2 启用Egress目的策略模式
+#### 3.6.2 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-#### 4.6.3 设置Egress目的策略
+#### 3.6.3 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -439,7 +352,7 @@ spec:
 EOF
 ```
 
-#### 4.6.4 设置全局出口代理网关策略
+#### 3.6.4 设置全局出口代理网关策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -455,13 +368,13 @@ spec:
 EOF
 ```
 
-#### 4.6.5 测试指令
+#### 3.6.5 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://httpbin.org:80/get?test=4.6.5
 ```
 
-#### 4.6.6 测试结果
+#### 3.6.6 测试结果
 
 正确返回结果类似于:
 
@@ -502,13 +415,13 @@ kubectl logs -n egress-gateway "$(kubectl get pod -n egress-gateway -l app=globa
 }
 ```
 
-#### 4.6.7 测试指令
+#### 3.6.7 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -c curl -- curl -sI http://edition.cnn.com?test=4.5.3
 ```
 
-#### 4.6.8 测试结果
+#### 3.6.8 测试结果
 
 该请求没有对应的目的策略，边车将直接拒绝，正确返回结果类似于:
 
