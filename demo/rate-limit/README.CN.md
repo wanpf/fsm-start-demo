@@ -53,7 +53,7 @@ osm install \
     - 统计时间窗口内请求的波动峰值
   
   - 限速响应
-    - 回写状态码：状态码取值范围 400~599，缺省 409
+    - 回写状态码：状态码取值范围 400~599，缺省 429
     - 回写响应头
   
 
@@ -456,7 +456,7 @@ Response Body/Total Sizes : count 10 avg 86.4 +/- 8.249 min 81 max 99 sum 864
 All done 10 calls (plus 0 warmup) 5.260 ms avg, 6.7 qps
 ```
 
-正如上面的测试结果所示，30%的请求都成功执行
+正如上面的测试结果所示，30%的请求成功执行
 
 ```bash
 Code 200 : 3 (30.0 %)
@@ -650,7 +650,7 @@ Response Body/Total Sizes : count 10 avg 86.4 +/- 8.249 min 81 max 99 sum 864
 All done 10 calls (plus 0 warmup) 5.260 ms avg, 6.7 qps
 ```
 
-正如上面的测试结果所示，30%的请求都成功执行
+正如上面的测试结果所示，30%的请求成功执行
 
 ```bash
 Code 200 : 3 (30.0 %)
