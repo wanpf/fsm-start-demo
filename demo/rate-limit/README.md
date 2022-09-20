@@ -219,7 +219,7 @@ All done 10 calls (plus 0 warmup) 3.362 ms avg, 851.4 qps
 
 ##### 3.3.2.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep fortio_8078_tcp.rate_limited
 ```
@@ -299,7 +299,7 @@ All done 10 calls (plus 0 warmup) 2.364 ms avg, 1137.8 qps
 
 ##### 3.3.3.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep fortio_8078_tcp.rate_limited
 ```
@@ -469,7 +469,7 @@ Code 429 : 7 (70.0 %)
 
 ###### 3.3.2.1.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -555,7 +555,7 @@ Code 200 : 10 (100.0 %)
 
 ###### 3.4.2.2.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -666,7 +666,7 @@ Code 429 : 7 (70.0 %)
 
 ###### 3.4.2.1.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -776,7 +776,7 @@ Code 429 : 7 (70.0 %)
 
 ###### 3.4.3.1.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -863,7 +863,7 @@ Code 200 : 10 (100.0 %)
 
 ###### 3.4.3.2.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -975,7 +975,7 @@ Code 429 : 7 (70.0 %)
 
 ###### 3.4.3.3.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -1087,7 +1087,7 @@ Code 429 : 7 (70.0 %)
 
 ###### 3.4.4.1.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -1176,7 +1176,7 @@ Code 200 : 10 (100.0 %)
 
 ###### 3.4.4.2.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
@@ -1290,7 +1290,7 @@ Code 429 : 7 (70.0 %)
 
 ###### 3.4.3.3.4 Indicator Data
 
-```console
+```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
 osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
