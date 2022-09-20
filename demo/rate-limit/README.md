@@ -1405,6 +1405,12 @@ content-length: 17
 connection: keep-alive
 ```
 
+返回响应头:
+
+```bash
+hello: world
+```
+
 This business scenario is tested and the strategy is cleaned up to avoid affecting subsequent tests
 
 ```bash
