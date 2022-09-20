@@ -688,18 +688,18 @@ Search Results:
 http_local_rate_limiter.http_local_rate_limit.rate_limited: 7
 ```
 
-###### 3.4.2.1.5 测试指令
+###### 3.4.2.1.5 Test Commands
 
-多次执行，触发限流
+Multiple executions to trigger current limit
 
 ```bash
 curl="$(kubectl get pod -n ratelimit -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec "$curl" -n ratelimit -c curl -- curl -sI http://fortio.ratelimit.svc.cluster.local:8080
 ```
 
-###### 3.4.2.1.6 测试结果
+###### 3.4.2.1.6 Test Results
 
-返回结果类似于:
+The return result is similar to :
 
 ```bash
 HTTP/1.1 509 Unassigned
@@ -708,7 +708,7 @@ content-length: 17
 connection: keep-alive
 ```
 
-返回响应头:
+Returns the response header:
 
 ```bash
 hello: world
@@ -1033,18 +1033,18 @@ Search Results:
 http_local_rate_limiter.http_local_rate_limit.rate_limited: 7
 ```
 
-###### 3.4.3.3.5 测试指令
+###### 3.4.3.3.5 Test Commands
 
-多次执行，触发限流
+Multiple executions to trigger current limit
 
 ```bash
 curl="$(kubectl get pod -n ratelimit -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec "$curl" -n ratelimit -c curl -- curl -sI http://fortio.ratelimit.svc.cluster.local:8080
 ```
 
-###### 3.4.3.3.6 测试结果
+###### 3.4.3.3.6 Test Results
 
-返回结果类似于:
+Returned result might look like:
 
 ```bash
 HTTP/1.1 509 Unassigned
@@ -1053,7 +1053,7 @@ content-length: 17
 connection: keep-alive
 ```
 
-返回响应头:
+Returned response:
 
 ```bash
 hello: world
@@ -1385,18 +1385,18 @@ Search Results:
 http_local_rate_limiter.http_local_rate_limit.rate_limited: 7
 ```
 
-###### 3.4.4.3.5 测试指令
+###### 3.4.4.3.5 Test Commands
 
-多次执行，触发限流
+Multiple executions to trigger current limit
 
 ```bash
 curl="$(kubectl get pod -n ratelimit -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec "$curl" -n ratelimit -c curl -- curl -sI -H "hello:world" http://fortio.ratelimit.svc.cluster.local:8080
 ```
 
-###### 3.4.4.3.6 测试结果
+###### 3.4.4.3.6 Test Results
 
-返回结果类似于:
+Returned result might look something like:
 
 ```bash
 HTTP/1.1 509 Unassigned
@@ -1405,7 +1405,7 @@ content-length: 17
 connection: keep-alive
 ```
 
-返回响应头:
+Return response header:
 
 ```bash
 hello: world
