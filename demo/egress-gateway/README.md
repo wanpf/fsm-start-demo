@@ -1,6 +1,6 @@
 # OSM Edge Egress Test
 
- ## 1. Download and install the `osm-edge` command line tool
+## 1. Download and install the `osm-edge` command line tool
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
