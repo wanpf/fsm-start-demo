@@ -1,4 +1,4 @@
-# OSM Edge Egress Test
+# OSM Edge Egress Gateway Test
 
 ## 1. Download and install the `osm-edge` command line tool
 
@@ -31,7 +31,7 @@ osm install \
     --timeout=900s
 ```
 
-## 3. Egress Test
+## 3. Egress Gateway Test
 
 ### 3.1 Technical concepts
 

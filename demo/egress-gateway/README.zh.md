@@ -1,4 +1,4 @@
-# OSM Edge Egress 测试
+# OSM Edge Egress Gateway 测试
 
 ## 1. 下载并安装 osm-edge 命令行工具
 
@@ -30,7 +30,7 @@ osm install \
     --timeout=900s
 ```
 
-## 3. Egress 测试
+## 3. Egress Gateway 测试
 
 ### 3.1 技术概念
 
