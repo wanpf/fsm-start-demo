@@ -196,7 +196,7 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 kubectl delete retry -n retry retry
 ```
 
-### 3.4 场景测试一：重试到未被 OSM Edge 纳管的服务
+### 3.4 场景测试二：重试到未被 OSM Edge 纳管的服务
 
 ### 3.4.1 启用Egress目的策略模式
 
