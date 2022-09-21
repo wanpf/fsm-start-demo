@@ -353,10 +353,3 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 kubectl delete retry -n retry retry
 kubectl delete egress -n retry httpbin-14001
 ```
-
-
-
-
-
-
-
