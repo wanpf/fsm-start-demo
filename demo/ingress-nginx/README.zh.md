@@ -26,7 +26,6 @@ osm install \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
-    --set=osm.sidecarClass=envoy \
     --timeout=900s
 ```
 
@@ -118,7 +117,13 @@ spec:
             name: httpbin
             port:
               number: 14001      
----
+EOF
+```
+
+#### 3.2.4 设置 IngressBackend 策略
+
+```bash
+kubectl apply -f - <<EOF
 kind: IngressBackend
 apiVersion: policy.openservicemesh.io/v1alpha1
 metadata:
@@ -137,13 +142,13 @@ spec:
 EOF
 ```
 
-#### 3.2.4 测试指令
+#### 3.2.5 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://ingress-nginx-controller.ingress-nginx:80/get -H "Host: httpbin.org"
 ```
 
-#### 3.2.5 测试结果
+#### 3.2.6 测试结果
 
 正确返回结果类似于:
 
@@ -168,7 +173,7 @@ kubectl delete ingress -n httpbin httpbin
 kubectl delete ingressbackend -n httpbin httpbin 
 ```
 
-### 3.3 场景测试二：HTTPS Ingress (mTLS and TLS)
+### 3.3 场景测试二：HTTPS Ingress
 
 #### 3.3.1 测试指令
 
@@ -223,7 +228,13 @@ spec:
             name: httpbin
             port:
               number: 14001
----
+EOF
+```
+
+#### 3.3.4 设置 IngressBackend 策略
+
+```bash
+kubectl apply -f - <<EOF
 apiVersion: policy.openservicemesh.io/v1alpha1
 kind: IngressBackend
 metadata:
@@ -246,13 +257,13 @@ spec:
 EOF
 ```
 
-#### 3.3.4 测试指令
+#### 3.3.5 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://ingress-nginx-controller.ingress-nginx:80/get -H "Host: httpbin.org"
 ```
 
-#### 3.3.5 测试结果
+#### 3.3.6 测试结果
 
 正确返回结果类似于:
 
