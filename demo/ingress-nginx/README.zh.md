@@ -75,7 +75,7 @@ kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
 kubectl wait --for=condition=ready pod -n ext-curl -l app=curl --timeout=180s
 ```
 
-### 3.2 场景测试一：HTTP Ingress
+### 3.2 HTTP Ingress测试
 
 #### 3.2.1 测试指令
 
@@ -173,7 +173,7 @@ kubectl delete ingress -n httpbin httpbin
 kubectl delete ingressbackend -n httpbin httpbin 
 ```
 
-### 3.3 场景测试二：HTTPS Ingress
+### 3.3 HTTPS Ingress测试
 
 #### 3.3.1 测试指令
 
@@ -231,7 +231,9 @@ spec:
 EOF
 ```
 
-#### 3.3.4 设置 IngressBackend 策略
+#### 3.3.4 场景测试一：证书校验，Ingress 证书正确
+
+##### 3.3.4.1 设置 IngressBackend 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -257,13 +259,13 @@ spec:
 EOF
 ```
 
-#### 3.3.5 测试指令
+##### 3.3.4.2 测试指令
 
 ```bash
 kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://ingress-nginx-controller.ingress-nginx:80/get -H "Host: httpbin.org"
 ```
 
-#### 3.3.6 测试结果
+##### 3.3.4.3 测试结果
 
 正确返回结果类似于:
 
@@ -276,6 +278,101 @@ Connection: keep-alive
 access-control-allow-origin: *
 access-control-allow-credentials: true
 x-envoy-upstream-service-time: 2
+```
+
+#### 3.3.5 场景测试一：证书校验，Ingress 证书不正确
+
+##### 3.3.5.1 设置 IngressBackend 策略
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: policy.openservicemesh.io/v1alpha1
+kind: IngressBackend
+metadata:
+  name: httpbin
+  namespace: httpbin
+spec:
+  backends:
+  - name: httpbin
+    port:
+      number: 14001 # targetPort of httpbin service
+      protocol: https
+    tls:
+      skipClientCertValidation: false
+  sources:
+  - kind: Service
+    name: ingress-nginx-controller
+    namespace: ingress-nginx
+  - kind: AuthenticatedPrincipal
+    name: untrusted-client.cluster.local # untrusted
+EOF
+```
+
+##### 3.3.5.2 测试指令
+
+```bash
+kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://ingress-nginx-controller.ingress-nginx:80/get -H "Host: httpbin.org"
+```
+
+##### 3.3.5.3 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 403 Forbidden
+Date: Fri, 23 Sep 2022 04:52:11 GMT
+Content-Type: text/plain
+Content-Length: 19
+Connection: keep-alive
+```
+
+#### 3.3.6 场景测试一：证书不校验，Ingress 证书不正确
+
+##### 3.3.6.1 设置 IngressBackend 策略
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: policy.openservicemesh.io/v1alpha1
+kind: IngressBackend
+metadata:
+  name: httpbin
+  namespace: httpbin
+spec:
+  backends:
+  - name: httpbin
+    port:
+      number: 14001 # targetPort of httpbin service
+      protocol: https
+    tls:
+      skipClientCertValidation: true
+  sources:
+  - kind: Service
+    name: ingress-nginx-controller
+    namespace: ingress-nginx
+  - kind: AuthenticatedPrincipal
+    name: untrusted-client.cluster.local # untrusted
+EOF
+```
+
+##### 3.3.6.2 测试指令
+
+```bash
+kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://ingress-nginx-controller.ingress-nginx:80/get -H "Host: httpbin.org"
+```
+
+##### 3.3.6.3 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+Date: Fri, 23 Sep 2022 04:53:26 GMT
+Content-Type: application/json
+Content-Length: 320
+Connection: keep-alive
+access-control-allow-origin: *
+access-control-allow-credentials: true
+x-pipy-upstream-service-time: 1
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
