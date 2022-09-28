@@ -231,7 +231,7 @@ spec:
 EOF
 ```
 
-#### 3.3.4 场景测试一：证书校验，Ingress 证书正确
+#### 3.3.4 场景测试一：证书校验，可信Ingress证书
 
 ##### 3.3.4.1 设置 IngressBackend 策略
 
@@ -280,7 +280,7 @@ access-control-allow-credentials: true
 x-envoy-upstream-service-time: 2
 ```
 
-#### 3.3.5 场景测试二：证书校验，Ingress 证书不正确
+#### 3.3.5 场景测试二：证书校验，不可信Ingress证书
 
 ##### 3.3.5.1 设置 IngressBackend 策略
 
@@ -326,7 +326,7 @@ Content-Length: 19
 Connection: keep-alive
 ```
 
-#### 3.3.6 场景测试三：证书不校验，Ingress 证书不正确
+#### 3.3.6 场景测试三：证书不校验，不可信Ingress证书
 
 ##### 3.3.6.1 设置 IngressBackend 策略
 
