@@ -390,7 +390,7 @@ spec:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
         minRequestAmount: 200           #熔断触发的最小请求数
-        errorRatioThreshold: 10.00      #错误比率触发阈值
+        errorRatioThreshold: 0.10       #错误比率触发阈值
         degradedTimeWindow: 1m          #降级持续时间
 EOF
 ```
@@ -515,7 +515,7 @@ spec:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
         minRequestAmount: 200           #熔断触发的最小请求数
-        errorRatioThreshold: 10.00      #错误比率触发阈值
+        errorRatioThreshold: 0.10       #错误比率触发阈值
         degradedTimeWindow: 1m          #降级持续时间
         degradedStatusCode: 520         #降级回写状态码
 EOF
