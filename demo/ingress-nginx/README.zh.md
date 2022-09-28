@@ -277,7 +277,7 @@ Content-Length: 321
 Connection: keep-alive
 access-control-allow-origin: *
 access-control-allow-credentials: true
-x-envoy-upstream-service-time: 2
+x-pipy-upstream-service-time: 2
 ```
 
 #### 3.3.5 场景测试二：证书校验，不可信Ingress证书
