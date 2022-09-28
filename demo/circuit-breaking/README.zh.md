@@ -36,23 +36,13 @@ osm install \
 
 在 OSM Edge 中支持熔断策略：
 
-- 支持4 层 TCP 协议熔断：
-  - maxConnections：最大连接数熔断
+- 4 层 TCP 协议：
+  - maxConnections：最大连接数
+- 7 层 HTTP 协议：
+  - maxRequestsPerConnection：最大请求频率
   - 错误调用熔断
     - statTimeWindow：熔断统计时间窗口
-    - errorAmountThreshold：错误数量触发阈值
-    - errorRatioThreshold：错误比率触发阈值
-    - degradedTimeWindow：降级持续时间
-  - 慢调用熔断
-    - statTimeWindow：熔断统计时间窗口
-    - slowTimeThreshold：慢调用耗时触发阈值
-    - slowAmountThreshold：慢调用数量触发阈值
-    - slowRatioThreshold：慢调用比率触发阈值
-    - degradedTimeWindow：降级持续时间
-- 支持7 层 HTTP 协议熔断：
-  - maxRequestsPerConnection：最大请求频率熔断
-  - 错误调用熔断
-    - statTimeWindow：熔断统计时间窗口
+    - minRequestAmount：熔断触发的最小请求数，请求数小于该值时即使异常比率超出阈值也不会熔断
     - errorAmountThreshold：错误数量触发阈值
     - errorRatioThreshold：错误比率触发阈值
     - degradedTimeWindow：降级持续时间
@@ -60,6 +50,7 @@ osm install \
     - degradedResponseContent：降级回写内容
   - 慢调用熔断
     - statTimeWindow：熔断统计时间窗口
+    - minRequestAmount：熔断触发的最小请求数，请求数小于该值时即使异常比率超出阈值也不会熔断
     - slowTimeThreshold：慢调用耗时触发阈值
     - slowAmountThreshold：慢调用数量触发阈值
     - slowRatioThreshold：慢调用比率触发阈值
@@ -84,17 +75,15 @@ kubectl wait --for=condition=ready pod -n circuit-breaking -l app=fortio --timeo
 kubectl wait --for=condition=ready pod -n circuit-breaking -l app=fortio-client --timeout=180s
 ```
 
-### 3.3 支持4 层 TCP 协议熔断
+### 3.3 支持7 层 HTTP 协议熔断
 
-### 3.4 支持7 层 HTTP 协议熔断
-
-#### 3.4.1 场景测试一：最大请求频率熔断
+#### 3.3.1 场景测试一：最大请求频率熔断
 
 请参见[Circuit breaking for destinations within the mesh](https://docs.openservicemesh.io/docs/demos/circuit_breaking_mesh_internal/)
 
-#### 3.4.2 场景测试二：错误数量触发熔断&降级持续时间
+#### 3.3.2 场景测试二：错误数量触发熔断&降级持续时间
 
-##### 3.4.2.1 测试指令
+##### 3.3.2.1 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -103,7 +92,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
 ```
 
-##### 3.4.2.2 测试结果
+##### 3.3.2.2 测试结果
 
 正确返回结果类似于:
 
@@ -134,7 +123,7 @@ Code 200 : 798 (79.8 %)
 Code 511 : 202 (20.2 %)
 ```
 
-##### 3.4.2.3 设置熔断策略
+##### 3.3.2.3 设置熔断策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -149,12 +138,13 @@ spec:
     http:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
         errorAmountThreshold: 100       #错误触发数量阈值
         degradedTimeWindow: 1m          #降级持续时间
 EOF
 ```
 
-##### 3.4.2.4 测试指令
+##### 3.3.2.4 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -163,7 +153,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
 ```
 
-##### 3.4.2.5 测试结果
+##### 3.3.2.5 测试结果
 
 正确返回结果类似于:
 
@@ -216,9 +206,9 @@ Code 511 : 101 (10.1 %)
 kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
 ```
 
-#### 3.4.3 场景测试三：错误数量触发熔断&降级持续时间&状态回写
+#### 3.3.3 场景测试三：错误数量触发熔断&降级持续时间&状态回写
 
-##### 3.4.3.1 测试指令
+##### 3.3.3.1 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -227,7 +217,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
 ```
 
-##### 3.4.3.2 测试结果
+##### 3.3.3.2 测试结果
 
 正确返回结果类似于:
 
@@ -258,7 +248,7 @@ Code 200 : 800 (80.0 %)
 Code 511 : 200 (20.0 %)
 ```
 
-##### 3.4.3.3 设置熔断策略
+##### 3.3.3.3 设置熔断策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -273,13 +263,14 @@ spec:
     http:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
         errorAmountThreshold: 100       #错误触发数量阈值
         degradedTimeWindow: 1m          #降级持续时间
         degradedStatusCode: 520         #降级回写状态码
 EOF
 ```
 
-##### 3.4.3.4 测试指令
+##### 3.3.3.4 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -288,7 +279,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
 ```
 
-##### 3.4.3.5 测试结果
+##### 3.3.3.5 测试结果
 
 正确返回结果类似于:
 
@@ -341,9 +332,9 @@ Code 520 : 511 (51.1 %)
 kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
 ```
 
-#### 3.4.4 场景测试四：错误比率触发熔断&降级持续时间
+#### 3.3.4 场景测试四：错误比率触发熔断&降级持续时间
 
-##### 3.4.4.1 测试指令
+##### 3.3.4.1 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -352,7 +343,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
 ```
 
-##### 3.4.4.2 测试结果
+##### 3.3.4.2 测试结果
 
 正确返回结果类似于:
 
@@ -383,7 +374,7 @@ Code 200 : 800 (80.0 %)
 Code 511 : 200 (20.0 %)
 ```
 
-##### 3.4.4.3 设置熔断策略
+##### 3.3.4.3 设置熔断策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -398,12 +389,13 @@ spec:
     http:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
         errorRatioThreshold: 10.00      #错误比率触发阈值
         degradedTimeWindow: 1m          #降级持续时间
 EOF
 ```
 
-##### 3.4.4.4 测试指令
+##### 3.3.4.4 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -412,7 +404,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:10
 ```
 
-##### 3.4.4.5 测试结果
+##### 3.3.4.5 测试结果
 
 正确返回结果类似于:
 
@@ -465,9 +457,9 @@ Code 511 : 11 (1.1 %)
 kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
 ```
 
-#### 3.4.5 场景测试五：错误比率触发熔断&降级持续时间&状态回写
+#### 3.3.5 场景测试五：错误比率触发熔断&降级持续时间&状态回写
 
-##### 3.4.5.1 测试指令
+##### 3.3.5.1 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -476,7 +468,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
 ```
 
-##### 3.4.5.2 测试结果
+##### 3.3.5.2 测试结果
 
 正确返回结果类似于:
 
@@ -507,7 +499,7 @@ Code 200 : 800 (80.0 %)
 Code 511 : 200 (20.0 %)
 ```
 
-##### 3.4.5.3 设置熔断策略
+##### 3.3.5.3 设置熔断策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -522,13 +514,14 @@ spec:
     http:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
         errorRatioThreshold: 10.00      #错误比率触发阈值
         degradedTimeWindow: 1m          #降级持续时间
         degradedStatusCode: 520         #降级回写状态码
 EOF
 ```
 
-##### 3.4.3.4 测试指令
+##### 3.3.3.4 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
@@ -537,7 +530,7 @@ fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jso
 kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
 ```
 
-##### 3.4.5.5 测试结果
+##### 3.3.5.5 测试结果
 
 正确返回结果类似于:
 
