@@ -590,11 +590,11 @@ kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
 
 ##### 3.3.6.1 测试指令
 
-4个连接，100 次请求， 80%的请求耗时 300ms：
+4个连接，100 次请求， 80%的请求耗时 100ms：
 
 ```bash
 fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps -1 -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps -1 -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=100ms:80
 ```
 
 ##### 3.3.6.2 测试结果
@@ -602,35 +602,37 @@ kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio loa
 正确返回结果类似于:
 
 ```bash
-Fortio 1.38.0 running at -1 queries per second, 8->8 procs, for 100 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
-Aggregated Function Time : count 100 avg 0.23061489 +/- 0.1284 min 0.000769956 max 0.311975699 sum 23.0614887
-# target 50% 0.304097
-# target 75% 0.308036
-# target 90% 0.3104
-# target 99% 0.311818
-# target 99.9% 0.31196
+Fortio 1.38.0 running at -1 queries per second, 8->8 procs, for 100 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=100ms:80
+Aggregated Function Time : count 100 avg 0.079708558 +/- 0.04255 min 0.000902818 max 0.112046223 sum 7.97085581
+# target 50% 0.104224
+# target 75% 0.108135
+# target 90% 0.110482
+# target 99% 0.11189
+# target 99.9% 0.112031
 Error cases : count 0 avg 0 +/- 0 min 0 max 0 sum 0
 # Socket and IP used for each connection:
-[0]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000137136 +/- 0 min 0.000137136 max 0.000137136 sum 0.000137136
-[1]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.00011152 +/- 0 min 0.00011152 max 0.00011152 sum 0.00011152
-[2]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000112732 +/- 0 min 0.000112732 max 0.000112732 sum 0.000112732
-[3]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000160958 +/- 0 min 0.000160958 max 0.000160958 sum 0.000160958
+[0]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000187115 +/- 0 min 0.000187115 max 0.000187115 sum 0.000187115
+[1]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000324836 +/- 0 min 0.000324836 max 0.000324836 sum 0.000324836
+[2]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000290974 +/- 0 min 0.000290974 max 0.000290974 sum 0.000290974
+[3]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000166892 +/- 0 min 0.000166892 max 0.000166892 sum 0.000166892
 Sockets used: 4 (for perfect keepalive, would be 4)
 Uniform: false, Jitter: false
 IP addresses distribution:
 10.96.150.242:8080: 4
 Code 200 : 100 (100.0 %)
-All done 100 calls (plus 0 warmup) 230.615 ms avg, 16.5 qps
+All done 100 calls (plus 0 warmup) 79.709 ms avg, 48.3 qps
 ```
 
-如上测试结果，50%以上的请求响应时间大于304 毫秒:
+如上测试结果，请求全部成功，50%以上的请求响应时间大于104 毫秒:
 
 ```bash
-# target 50% 0.304097
-# target 75% 0.308036
-# target 90% 0.3104
-# target 99% 0.311818
-# target 99.9% 0.31196
+# target 50% 0.104224
+# target 75% 0.108135
+# target 90% 0.110482
+# target 99% 0.11189
+# target 99.9% 0.112031
+
+Code 200 : 100 (100.0 %)
 ```
 
 ##### 3.3.6.3 设置熔断策略
@@ -648,20 +650,20 @@ spec:
     http:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
-        minRequestAmount: 200           #熔断触发的最小请求数
-        slowTimeThreshold: 300ms        #慢调用耗时触发阈值
-        slowAmountThreshold: 20         #慢调用数量触发阈值
+        minRequestAmount: 50            #熔断触发的最小请求数
+        slowTimeThreshold: 100ms        #慢调用耗时触发阈值
+        slowAmountThreshold: 5          #慢调用数量触发阈值
         degradedTimeWindow: 1m          #降级持续时间
 EOF
 ```
 
 ##### 3.3.6.4 测试指令
 
-4个连接，100 次请求， 80%的请求耗时 300ms：
+4个连接，100 次请求， 80%的请求耗时 100ms：
 
 ```bash
 fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps -1 -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps -1 -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=100ms:80
 
 kubectl logs -n circuit-breaking "$fortio_client" -c sidecar | grep block
 ```
@@ -671,33 +673,33 @@ kubectl logs -n circuit-breaking "$fortio_client" -c sidecar | grep block
 正确返回结果类似于:
 
 ```bash
-Fortio 1.38.0 running at -1 queries per second, 8->8 procs, for 100 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
-Aggregated Function Time : count 100 avg 0.071200558 +/- 0.1266 min 0.000268037 max 0.312473781 sum 7.1200558
-# target 50% 0.00172881
-# target 75% 0.0103333
-# target 90% 0.30705
-# target 99% 0.311931
-# target 99.9% 0.31242
-Error cases : count 66 avg 0.0017297353 +/- 0.0005807 min 0.000268037 max 0.003755874 sum 0.114162527
+Fortio 1.38.0 running at -1 queries per second, 8->8 procs, for 100 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=100ms:80
+Aggregated Function Time : count 100 avg 0.010155565 +/- 0.02858 min 0.000569369 max 0.111481072 sum 1.01555648
+# target 50% 0.00172727
+# target 75% 0.00233333
+# target 90% 0.00333333
+# target 99% 0.110046
+# target 99.9% 0.111338
+Error cases : count 91 avg 0.0017370852 +/- 0.0005352 min 0.000569369 max 0.003498693 sum 0.15807475
 # Socket and IP used for each connection:
-[0]  14 socket used, resolved to [10.96.150.242:8080] connection timing : count 14 avg 0.00012088021 +/- 1.933e-05 min 0.000106483 max 0.000180686 sum 0.001692323
-[1]  17 socket used, resolved to [10.96.150.242:8080] connection timing : count 17 avg 8.9886588e-05 +/- 2.456e-05 min 6.0354e-05 max 0.000131841 sum 0.001528072
-[2]  19 socket used, resolved to [10.96.150.242:8080] connection timing : count 19 avg 0.00010164337 +/- 2.572e-05 min 5.8074e-05 max 0.000177557 sum 0.001931224
-[3]  16 socket used, resolved to [10.96.150.242:8080] connection timing : count 16 avg 9.6349188e-05 +/- 3.067e-05 min 5.8168e-05 max 0.00017662 sum 0.001541587
-Sockets used: 66 (for perfect keepalive, would be 4)
+[0]  22 socket used, resolved to [10.96.150.242:8080] connection timing : count 22 avg 9.9271091e-05 +/- 2.839e-05 min 6.2362e-05 max 0.000177451 sum 0.002183964
+[1]  23 socket used, resolved to [10.96.150.242:8080] connection timing : count 23 avg 9.8896913e-05 +/- 3.819e-05 min 5.3511e-05 max 0.000237471 sum 0.002274629
+[2]  23 socket used, resolved to [10.96.150.242:8080] connection timing : count 23 avg 9.8339391e-05 +/- 3.342e-05 min 3.8369e-05 max 0.000180483 sum 0.002261806
+[3]  23 socket used, resolved to [10.96.150.242:8080] connection timing : count 23 avg 0.0001174677 +/- 7.214e-05 min 4.7787e-05 max 0.00036754 sum 0.002701757
+Sockets used: 91 (for perfect keepalive, would be 4)
 Uniform: false, Jitter: false
 IP addresses distribution:
-10.96.150.242:8080: 66
-Code 200 : 34 (34.0 %)
-Code 409 : 66 (66.0 %)
-All done 100 calls (plus 0 warmup) 71.201 ms avg, 53.8 qps
+10.96.150.242:8080: 91
+Code 200 : 9 (9.0 %)
+Code 409 : 91 (91.0 %)
+All done 100 calls (plus 0 warmup) 10.156 ms avg, 392.4 qps
 ```
 
 如上测试结果，近似 100次错误后，发生熔断:
 
 ```bash
-Code 200 : 34 (34.0 %)
-Code 409 : 66 (66.0 %)
+Code 200 : 9 (9.0 %)
+Code 409 : 91 (91.0 %)
 ```
 
 降级持续时间 1 分钟，期间再次执行，返回结果:
