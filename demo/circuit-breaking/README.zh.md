@@ -65,10 +65,10 @@ kubectl create namespace circuit-breaking
 osm namespace add circuit-breaking
 
 #模拟业务服务
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio.yaml -n circuit-breaking
+kubectl apply -f ./demo/circuit-breaking/fortio.yaml -n circuit-breaking
 
 #模拟客户端
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio-client.yaml -n circuit-breaking
+kubectl apply -f ./demo/circuit-breaking/fortio-client.yaml -n circuit-breaking
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n circuit-breaking -l app=fortio --timeout=180s
@@ -522,6 +522,520 @@ EOF
 ```
 
 ##### 3.3.3.4 测试指令
+
+单连接，1000 次请求， 20%的错误率，错误码 511：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+
+
+kubectl logs -n circuit-breaking "$fortio_client" -c sidecar | grep block
+```
+
+##### 3.3.5.5 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+Aggregated Function Time : count 1000 avg 0.0013628777 +/- 0.0006277 min 0.000541009 max 0.00479157 sum 1.36287773
+# target 50% 0.00120215
+# target 75% 0.00173978
+# target 90% 0.0022377
+# target 99% 0.00297541
+# target 99.9% 0.00452771
+Error cases : count 588 avg 0.0016197162 +/- 0.0004588 min 0.000604428 max 0.004763581 sum 0.952393106
+# Socket and IP used for each connection:
+[0] 588 socket used, resolved to [10.96.150.163:8080] connection timing : count 588 avg 0.00011578365 +/- 3.81e-05 min 5.3573e-05 max 0.000454821 sum 0.068080784
+Sockets used: 588 (for perfect keepalive, would be 1)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.163:8080: 588
+Code 200 : 412 (41.2 %)
+Code 511 : 101 (10.1 %)
+Code 520 : 487 (48.7 %)
+All done 1000 calls (plus 0 warmup) 1.363 ms avg, 733.6 qps
+```
+
+如上测试结果，近似 10%的错误率(100次错误)后，发生熔断，状态码回写 409为 520:
+
+```bash
+Code 200 : 412 (41.2 %)
+Code 511 : 101 (10.1 %)
+Code 520 : 487 (48.7 %)
+```
+
+降级持续时间 1 分钟，期间再次执行，返回结果:
+
+```bash
+Code 520 : 1000 (100.0 %)
+```
+
+1分钟后执行，返回结果:
+
+```bash
+Code 200 : 388 (38.8 %)
+Code 511 : 101 (10.1 %)
+Code 520 : 511 (51.1 %)
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
+```
+
+#### 3.3.6 场景测试六：慢调用数量触发熔断&降级持续时间
+
+##### 3.3.6.1 测试指令
+
+4个连接，100 次请求， 80%的请求耗时 300ms：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps -1 -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
+```
+
+##### 3.3.6.2 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at -1 queries per second, 8->8 procs, for 100 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
+Aggregated Function Time : count 100 avg 0.23061489 +/- 0.1284 min 0.000769956 max 0.311975699 sum 23.0614887
+# target 50% 0.304097
+# target 75% 0.308036
+# target 90% 0.3104
+# target 99% 0.311818
+# target 99.9% 0.31196
+Error cases : count 0 avg 0 +/- 0 min 0 max 0 sum 0
+# Socket and IP used for each connection:
+[0]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000137136 +/- 0 min 0.000137136 max 0.000137136 sum 0.000137136
+[1]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.00011152 +/- 0 min 0.00011152 max 0.00011152 sum 0.00011152
+[2]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000112732 +/- 0 min 0.000112732 max 0.000112732 sum 0.000112732
+[3]   1 socket used, resolved to [10.96.150.242:8080] connection timing : count 1 avg 0.000160958 +/- 0 min 0.000160958 max 0.000160958 sum 0.000160958
+Sockets used: 4 (for perfect keepalive, would be 4)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.242:8080: 4
+Code 200 : 100 (100.0 %)
+All done 100 calls (plus 0 warmup) 230.615 ms avg, 16.5 qps
+```
+
+如上测试结果，50%以上的请求响应时间大于304 毫秒:
+
+```bash
+# target 50% 0.304097
+# target 75% 0.308036
+# target 90% 0.3104
+# target 99% 0.311818
+# target 99.9% 0.31196
+```
+
+##### 3.3.6.3 设置熔断策略
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: policy.openservicemesh.io/v1alpha1
+kind: UpstreamTrafficSetting
+metadata:
+  name: http-circuit-breaking
+  namespace: circuit-breaking
+spec:
+  host: fortio.circuit-breaking.svc.cluster.local
+  connectionSettings:
+    http:
+      circuitBreaking:                  #7层熔断策略
+        statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
+        slowTimeThreshold: 300ms        #慢调用耗时触发阈值
+        slowAmountThreshold: 20         #慢调用数量触发阈值
+        degradedTimeWindow: 1m          #降级持续时间
+EOF
+```
+
+##### 3.3.6.4 测试指令
+
+4个连接，100 次请求， 80%的请求耗时 300ms：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps -1 -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
+
+kubectl logs -n circuit-breaking "$fortio_client" -c sidecar | grep block
+```
+
+##### 3.3.6.5 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at -1 queries per second, 8->8 procs, for 100 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=300ms:80
+Aggregated Function Time : count 100 avg 0.071200558 +/- 0.1266 min 0.000268037 max 0.312473781 sum 7.1200558
+# target 50% 0.00172881
+# target 75% 0.0103333
+# target 90% 0.30705
+# target 99% 0.311931
+# target 99.9% 0.31242
+Error cases : count 66 avg 0.0017297353 +/- 0.0005807 min 0.000268037 max 0.003755874 sum 0.114162527
+# Socket and IP used for each connection:
+[0]  14 socket used, resolved to [10.96.150.242:8080] connection timing : count 14 avg 0.00012088021 +/- 1.933e-05 min 0.000106483 max 0.000180686 sum 0.001692323
+[1]  17 socket used, resolved to [10.96.150.242:8080] connection timing : count 17 avg 8.9886588e-05 +/- 2.456e-05 min 6.0354e-05 max 0.000131841 sum 0.001528072
+[2]  19 socket used, resolved to [10.96.150.242:8080] connection timing : count 19 avg 0.00010164337 +/- 2.572e-05 min 5.8074e-05 max 0.000177557 sum 0.001931224
+[3]  16 socket used, resolved to [10.96.150.242:8080] connection timing : count 16 avg 9.6349188e-05 +/- 3.067e-05 min 5.8168e-05 max 0.00017662 sum 0.001541587
+Sockets used: 66 (for perfect keepalive, would be 4)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.242:8080: 66
+Code 200 : 34 (34.0 %)
+Code 409 : 66 (66.0 %)
+All done 100 calls (plus 0 warmup) 71.201 ms avg, 53.8 qps
+```
+
+如上测试结果，近似 100次错误后，发生熔断:
+
+```bash
+Code 200 : 34 (34.0 %)
+Code 409 : 66 (66.0 %)
+```
+
+降级持续时间 1 分钟，期间再次执行，返回结果:
+
+```bash
+Code 409 : 1000 (100.0 %)
+```
+
+1分钟后执行，返回结果:
+
+```bash
+Code 200 : 396 (39.6 %)
+Code 409 : 503 (50.3 %)
+Code 511 : 101 (10.1 %)
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
+```
+
+#### 3.3.7 场景测试七：慢调用数量触发熔断&降级持续时间&状态回写
+
+##### 3.3.7.1 测试指令
+
+单连接，1000 次请求， 20%的错误率，错误码 511：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+```
+
+##### 3.3.7.2 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+Aggregated Function Time : count 1000 avg 0.00098462243 +/- 0.000789 min 0.000506667 max 0.015732066 sum 0.984622429
+# target 50% 0.000823085
+# target 75% 0.000981611
+# target 90% 0.00229771
+# target 99% 0.00298473
+# target 99.9% 0.005
+Error cases : count 200 avg 0.001170558 +/- 0.001232 min 0.000566454 max 0.015732066 sum 0.234111609
+# Socket and IP used for each connection:
+[0] 201 socket used, resolved to [10.96.150.163:8080] connection timing : count 201 avg 0.00012459086 +/- 4.717e-05 min 6.3066e-05 max 0.000477904 sum 0.025042763
+Sockets used: 201 (for perfect keepalive, would be 1)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.163:8080: 201
+Code 200 : 800 (80.0 %)
+Code 511 : 200 (20.0 %)
+All done 1000 calls (plus 0 warmup) 0.985 ms avg, 1015.3 qp
+```
+
+如上测试结果，近似 20%的错误率:
+
+```bash
+Code 200 : 800 (80.0 %)
+Code 511 : 200 (20.0 %)
+```
+
+##### 3.3.7.3 设置熔断策略
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: policy.openservicemesh.io/v1alpha1
+kind: UpstreamTrafficSetting
+metadata:
+  name: http-circuit-breaking
+  namespace: circuit-breaking
+spec:
+  host: fortio.circuit-breaking.svc.cluster.local
+  connectionSettings:
+    http:
+      circuitBreaking:                  #7层熔断策略
+        statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
+        errorAmountThreshold: 100       #错误触发数量阈值
+        degradedTimeWindow: 1m          #降级持续时间
+        degradedStatusCode: 520         #降级回写状态码
+EOF
+```
+
+##### 3.3.7.4 测试指令
+
+单连接，1000 次请求， 20%的错误率，错误码 511：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+```
+
+##### 3.3.7.5 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+Aggregated Function Time : count 1000 avg 0.0013628777 +/- 0.0006277 min 0.000541009 max 0.00479157 sum 1.36287773
+# target 50% 0.00120215
+# target 75% 0.00173978
+# target 90% 0.0022377
+# target 99% 0.00297541
+# target 99.9% 0.00452771
+Error cases : count 588 avg 0.0016197162 +/- 0.0004588 min 0.000604428 max 0.004763581 sum 0.952393106
+# Socket and IP used for each connection:
+[0] 588 socket used, resolved to [10.96.150.163:8080] connection timing : count 588 avg 0.00011578365 +/- 3.81e-05 min 5.3573e-05 max 0.000454821 sum 0.068080784
+Sockets used: 588 (for perfect keepalive, would be 1)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.163:8080: 588
+Code 200 : 412 (41.2 %)
+Code 511 : 101 (10.1 %)
+Code 520 : 487 (48.7 %)
+All done 1000 calls (plus 0 warmup) 1.363 ms avg, 733.6 qps
+```
+
+如上测试结果，近似100次错误后，发生熔断，状态码回写 409为 520:
+
+```bash
+Code 200 : 412 (41.2 %)
+Code 511 : 101 (10.1 %)
+Code 520 : 487 (48.7 %)
+```
+
+降级持续时间 1 分钟，期间再次执行，返回结果:
+
+```bash
+Code 520 : 1000 (100.0 %)
+```
+
+1分钟后执行，返回结果:
+
+```bash
+Code 200 : 388 (38.8 %)
+Code 511 : 101 (10.1 %)
+Code 520 : 511 (51.1 %)
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
+```
+
+#### 3.3.8 场景测试八：慢调用比率触发熔断&降级持续时间
+
+##### 3.3.8.1 测试指令
+
+单连接，1000 次请求， 20%的错误率，错误码 511：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+```
+
+##### 3.3.8.2 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+Aggregated Function Time : count 1000 avg 0.00099189489 +/- 0.0006398 min 0.000504815 max 0.004780717 sum 0.991894887
+# target 50% 0.000820796
+# target 75% 0.000979103
+# target 90% 0.00231618
+# target 99% 0.00297794
+# target 99.9% 0.00452048
+Error cases : count 200 avg 0.0010457005 +/- 0.0006665 min 0.000590193 max 0.004308139 sum 0.209140105
+# Socket and IP used for each connection:
+[0] 201 socket used, resolved to [10.96.150.163:8080] connection timing : count 201 avg 0.00012012314 +/- 3.68e-05 min 6.7658e-05 max 0.000298295 sum 0.024144751
+Sockets used: 201 (for perfect keepalive, would be 1)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.163:8080: 201
+Code 200 : 800 (80.0 %)
+Code 511 : 200 (20.0 %)
+All done 1000 calls (plus 0 warmup) 0.992 ms avg, 1007.9 qps
+```
+
+如上测试结果，近似 20%的错误率:
+
+```bash
+Code 200 : 800 (80.0 %)
+Code 511 : 200 (20.0 %)
+```
+
+##### 3.3.8.3 设置熔断策略
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: policy.openservicemesh.io/v1alpha1
+kind: UpstreamTrafficSetting
+metadata:
+  name: http-circuit-breaking
+  namespace: circuit-breaking
+spec:
+  host: fortio.circuit-breaking.svc.cluster.local
+  connectionSettings:
+    http:
+      circuitBreaking:                  #7层熔断策略
+        statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
+        errorRatioThreshold: 0.10       #错误比率触发阈值
+        degradedTimeWindow: 1m          #降级持续时间
+EOF
+```
+
+##### 3.3.8.4 测试指令
+
+单连接，1000 次请求， 20%的错误率，错误码 511：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:10
+```
+
+##### 3.3.8.5 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:10
+Aggregated Function Time : count 1000 avg 0.0016429267 +/- 0.0004358 min 0.000533189 max 0.00474449 sum 1.64292672
+# target 50% 0.00149561
+# target 75% 0.00180928
+# target 90% 0.00199749
+# target 99% 0.00297778
+# target 99.9% 0.00437225
+Error cases : count 894 avg 0.0017435252 +/- 0.0002813 min 0.000554536 max 0.004430205 sum 1.55871156
+# Socket and IP used for each connection:
+[0] 894 socket used, resolved to [10.96.150.163:8080] connection timing : count 894 avg 0.00011459571 +/- 4.073e-05 min 6.3708e-05 max 0.000751849 sum 0.102448566
+Sockets used: 894 (for perfect keepalive, would be 1)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.163:8080: 894
+Code 200 : 106 (10.6 %)
+Code 409 : 883 (88.3 %)
+Code 511 : 11 (1.1 %)
+All done 1000 calls (plus 0 warmup) 1.643 ms avg, 608.5 qps
+```
+
+~~如上测试结果，近似 10%的错误率(100次错误)后，发生熔断:~~
+
+```bash
+Code 200 : 106 (10.6 %)
+Code 409 : 883 (88.3 %)
+Code 511 : 11 (1.1 %)
+```
+
+降级持续时间 1 分钟，期间再次执行，返回结果:
+
+```bash
+Code 409 : 1000 (100.0 %)
+```
+
+1分钟后执行，返回结果:
+
+```bash
+Code 200 : 51 (5.1 %)
+Code 409 : 938 (93.8 %)
+Code 511 : 11 (1.1 %)
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
+```
+
+#### 3.3.9 场景测试九：慢调用比率触发熔断&降级持续时间&状态回写
+
+##### 3.3.9.1 测试指令
+
+单连接，1000 次请求， 20%的错误率，错误码 511：
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps 0 -c 1 -n 1000 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+```
+
+##### 3.3.9.2 测试结果
+
+正确返回结果类似于:
+
+```bash
+Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
+Aggregated Function Time : count 1000 avg 0.00098462243 +/- 0.000789 min 0.000506667 max 0.015732066 sum 0.984622429
+# target 50% 0.000823085
+# target 75% 0.000981611
+# target 90% 0.00229771
+# target 99% 0.00298473
+# target 99.9% 0.005
+Error cases : count 200 avg 0.001170558 +/- 0.001232 min 0.000566454 max 0.015732066 sum 0.234111609
+# Socket and IP used for each connection:
+[0] 201 socket used, resolved to [10.96.150.163:8080] connection timing : count 201 avg 0.00012459086 +/- 4.717e-05 min 6.3066e-05 max 0.000477904 sum 0.025042763
+Sockets used: 201 (for perfect keepalive, would be 1)
+Uniform: false, Jitter: false
+IP addresses distribution:
+10.96.150.163:8080: 201
+Code 200 : 800 (80.0 %)
+Code 511 : 200 (20.0 %)
+All done 1000 calls (plus 0 warmup) 0.985 ms avg, 1015.3 qp
+```
+
+如上测试结果，近似 20%的错误率:
+
+```bash
+Code 200 : 800 (80.0 %)
+Code 511 : 200 (20.0 %)
+```
+
+##### 3.3.9.3 设置熔断策略
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: policy.openservicemesh.io/v1alpha1
+kind: UpstreamTrafficSetting
+metadata:
+  name: http-circuit-breaking
+  namespace: circuit-breaking
+spec:
+  host: fortio.circuit-breaking.svc.cluster.local
+  connectionSettings:
+    http:
+      circuitBreaking:                  #7层熔断策略
+        statTimeWindow: 1m              #熔断统计时间窗口
+        minRequestAmount: 200           #熔断触发的最小请求数
+        errorRatioThreshold: 0.10       #错误比率触发阈值
+        degradedTimeWindow: 1m          #降级持续时间
+        degradedStatusCode: 520         #降级回写状态码
+EOF
+```
+
+##### 3.3.9.4 测试指令
 
 单连接，1000 次请求， 20%的错误率，错误码 511：
 
