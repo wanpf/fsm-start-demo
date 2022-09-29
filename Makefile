@@ -1,5 +1,8 @@
 #!/bin/bash
 
+CTR_REGISTRY ?= flomesh
+CTR_TAG      ?= latest
+
 ARCH_MAP_x86_64 := amd64
 ARCH_MAP_arm64 := arm64
 ARCH_MAP_aarch64 := arm64
@@ -20,3 +23,24 @@ udp-echo:
 
 ingress-nginx:
 	scripts/deploy-ingress-nginx-demo.sh
+
+switch-osm-edge-image-registry-flomesh:
+	scripts/switch-osm-edge-image-registry.sh flomesh
+
+switch-osm-edge-image-registry-cybwan:
+	scripts/switch-osm-edge-image-registry.sh cybwan
+
+switch-osm-edge-image-registry-local:
+	scripts/switch-osm-edge-image-registry.sh localhost:5000/flomesh
+
+switch-osm-edge-image-registry:
+	scripts/switch-osm-edge-image-registry.sh $(CTR_REGISTRY)
+
+switch-osm-edge-image-tag:
+	scripts/switch-osm-edge-image-tag.sh $(CTR_TAG)
+
+switch-osm-edge-demo-repo-remote:
+	scripts/switch-osm-edge-demo-repo.sh https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main
+
+switch-osm-edge-demo-repo-local:
+	scripts/switch-osm-edge-demo-repo.sh .
