@@ -65,10 +65,10 @@ kubectl create namespace circuit-breaking
 osm namespace add circuit-breaking
 
 #模拟业务服务
-kubectl apply -f ./demo/circuit-breaking/fortio.yaml -n circuit-breaking
+kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio.yaml -n circuit-breaking
 
 #模拟客户端
-kubectl apply -f ./demo/circuit-breaking/fortio-client.yaml -n circuit-breaking
+kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio-client.yaml -n circuit-breaking
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n circuit-breaking -l app=fortio --timeout=180s
@@ -594,7 +594,7 @@ kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
 
 ```bash
 fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -qps -1 -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=100ms:80
+kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio load -quiet -c 4 -n 100 http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=100ms:80
 ```
 
 ##### 3.3.6.2 测试结果
