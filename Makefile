@@ -2,6 +2,7 @@
 
 CTR_REGISTRY ?= flomesh
 CTR_TAG      ?= latest
+CTR_REPO     ?= https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main
 
 ARCH_MAP_x86_64 := amd64
 ARCH_MAP_arm64 := arm64
@@ -39,8 +40,8 @@ switch-osm-edge-image-registry:
 switch-osm-edge-image-tag:
 	scripts/switch-osm-edge-image-tag.sh $(CTR_TAG)
 
-switch-osm-edge-demo-repo-remote:
-	scripts/switch-osm-edge-demo-repo.sh https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main
+switch-osm-edge-demo-repo:
+	scripts/switch-osm-edge-demo-repo.sh $(CTR_REPO)
 
 switch-osm-edge-demo-repo-local:
 	scripts/switch-osm-edge-demo-repo.sh .

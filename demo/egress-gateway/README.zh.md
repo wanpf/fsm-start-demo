@@ -21,7 +21,7 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
+    --set=osm.image.registry=cybwan \
     --set=osm.image.tag=1.2.1-alpha.1 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enableEgress=false \
