@@ -854,6 +854,7 @@ spec:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
         minRequestAmount: 200           #熔断触发的最小请求数
+        slowTimeThreshold: 200ms        #慢调用耗时触发阈值
         errorAmountThreshold: 100       #错误触发数量阈值
         degradedTimeWindow: 1m          #降级持续时间
         degradedStatusCode: 520         #降级回写状态码
