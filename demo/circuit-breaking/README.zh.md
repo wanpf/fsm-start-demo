@@ -733,7 +733,7 @@ Code 409 : 428 (42.8 %)
 All done 1000 calls (plus 0 warmup) 23.932 ms avg, 199.7 qps
 ```
 
-如上测试结果，428个请求错误码 409，发生熔断:
+如上测试结果， 572 个成功请求后，熔断，错误码409:
 
 ```bash
 Code 200 : 572 (57.2 %)
@@ -855,7 +855,7 @@ spec:
         statTimeWindow: 1m              #熔断统计时间窗口
         minRequestAmount: 200           #熔断触发的最小请求数
         slowTimeThreshold: 200ms        #慢调用耗时触发阈值
-        errorAmountThreshold: 100       #错误触发数量阈值
+        slowAmountThreshold: 100        #慢调用数量触发阈值
         degradedTimeWindow: 1m          #降级持续时间
         degradedStatusCode: 520         #降级回写状态码
 EOF
@@ -876,59 +876,72 @@ kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio loa
 
 ```bash
 Fortio 1.38.0 running at 200 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=200ms:20
-Aggregated Sleep Time : count 990 avg -0.19152577 +/- 0.258 min -1.23236586 max 0.049224197 sum -189.610511
+Aggregated Sleep Time : count 990 avg -0.077386895 +/- 0.1877 min -0.831417887 max 0.049561916 sum -76.6130261
 # range, mid point, percentile, count
->= -1.23237 <= -0.001 , -0.616683 , 71.92, 712
-> 0.011 <= 0.013 , 0.012 , 72.02, 1
-> 0.017 <= 0.019 , 0.018 , 72.12, 1
-> 0.024 <= 0.029 , 0.0265 , 73.23, 11
-> 0.029 <= 0.034 , 0.0315 , 73.64, 4
-> 0.034 <= 0.039 , 0.0365 , 74.04, 4
-> 0.039 <= 0.044 , 0.0415 , 76.97, 29
-> 0.044 <= 0.049 , 0.0465 , 99.80, 226
-> 0.049 <= 0.0492242 , 0.0491121 , 100.00, 2
-# target 50% -0.376818
-WARNING 71.92% of sleep were falling behind
-Aggregated Function Time : count 1000 avg 0.041241291 +/- 0.07994 min 0.000569982 max 0.227691209 sum 41.2412906
-# target 50% 0.00154639
-# target 78% 0.00294545
-# target 79% 0.005
-# target 80% 0.0278571
-# target 81% 0.200984
-# target 82% 0.20239
-# target 90% 0.213635
-# target 95% 0.220663
-Error cases : count 0 avg 0 +/- 0 min 0 max 0 sum 0
+>= -0.831418 <= -0.001 , -0.416209 , 42.93, 425
+> 0.002 <= 0.003 , 0.0025 , 43.03, 1
+> 0.003 <= 0.004 , 0.0035 , 43.13, 1
+> 0.017 <= 0.019 , 0.018 , 43.23, 1
+> 0.019 <= 0.024 , 0.0215 , 43.43, 2
+> 0.024 <= 0.029 , 0.0265 , 44.14, 7
+> 0.029 <= 0.034 , 0.0315 , 44.55, 4
+> 0.034 <= 0.039 , 0.0365 , 45.05, 5
+> 0.039 <= 0.044 , 0.0415 , 48.48, 34
+> 0.044 <= 0.049 , 0.0465 , 99.29, 503
+> 0.049 <= 0.0495619 , 0.049281 , 100.00, 7
+# target 50% 0.0441491
+WARNING 42.93% of sleep were falling behind
+Aggregated Function Time : count 1000 avg 0.023970257 +/- 0.06157 min 0.000214536 max 0.220962029 sum 23.9702568
+# target 50% 0.00274
+# target 78% 0.00468148
+# target 79% 0.00475556
+# target 80% 0.00482963
+# target 81% 0.0049037
+# target 82% 0.00497778
+# target 90% 0.201187
+# target 95% 0.211074
+Error cases : count 475 avg 0.0036158004 +/- 0.001259 min 0.000214536 max 0.006896897 sum 1.7175052
 # Socket and IP used for each connection:
 ...
-Sockets used: 10 (for perfect keepalive, would be 10)
+Sockets used: 475 (for perfect keepalive, would be 10)
 Uniform: false, Jitter: false
 IP addresses distribution:
-10.96.144.44:8080: 10
-Code 200 : 1000 (100.0 %)
-All done 1000 calls (plus 0 warmup) 41.241 ms avg, 166.5 qps
+10.96.144.44:8080: 475
+Code 200 : 525 (52.5 %)
+Code 520 : 475 (47.5 %)
+All done 1000 calls (plus 0 warmup) 23.970 ms avg, 199.8 qps
 ```
 
-如上测试结果，近似100次错误后，发生熔断，状态码回写 409为 520:
+如上测试结果， 525 个成功请求后，发生熔断，回写状态码为 520:
 
 ```bash
-Code 200 : 412 (41.2 %)
-Code 511 : 101 (10.1 %)
-Code 520 : 487 (48.7 %)
+Code 200 : 525 (52.5 %)
+Code 520 : 475 (47.5 %)
+```
+
+查看 sidecar 日志:
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl logs -n circuit-breaking "$fortio_client" -c sidecar | grep circuit_breaker
+```
+
+如sidecar 日志所示，525个请求中，100个慢响应，断路器状态为open:
+
+```bash
+2022-09-30 09:17:40.882 [INF] [circuit_breaker] tick/delay/degraded/total/slowAmount/errorAmount (open)  report circuit-breaking/fortio|8080 5 0 true 525 100 0
 ```
 
 降级持续时间 1 分钟，期间再次执行，返回结果:
 
 ```bash
-Code 520 : 1000 (100.0 %)
+Code 409 : 1000 (100.0 %)
 ```
 
-1分钟后执行，返回结果:
+ 1 分钟后，查看 sidecar 日志，断路器状态为close:
 
 ```bash
-Code 200 : 388 (38.8 %)
-Code 511 : 101 (10.1 %)
-Code 520 : 511 (51.1 %)
+2022-09-30 08:48:52.202 [INF] [circuit_breaker] tick/delay/degraded/total/slowAmount/errorAmount (close) timer circuit-breaking/fortio|8080 0 61 false 0 2 0
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -954,27 +967,28 @@ kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio loa
 
 ```bash
 Fortio 1.38.0 running at 200 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=200ms:20
-Aggregated Sleep Time : count 990 avg -0.14824273 +/- 0.1789 min -0.720912436 max 0.049244595 sum -146.760305
+Aggregated Sleep Time : count 990 avg -0.2042497 +/- 0.2285 min -1.029156243 max 0.048909067 sum -202.207207
 # range, mid point, percentile, count
->= -0.720912 <= -0.001 , -0.360956 , 71.72, 710
-> 0.019 <= 0.024 , 0.0215 , 71.92, 2
-> 0.024 <= 0.029 , 0.0265 , 73.03, 11
-> 0.029 <= 0.034 , 0.0315 , 73.84, 8
-> 0.034 <= 0.039 , 0.0365 , 75.05, 12
-> 0.039 <= 0.044 , 0.0415 , 77.17, 21
-> 0.044 <= 0.049 , 0.0465 , 99.70, 223
-> 0.049 <= 0.0492446 , 0.0491223 , 100.00, 3
-# target 50% -0.219309
-WARNING 71.72% of sleep were falling behind
-Aggregated Function Time : count 1000 avg 0.039156439 +/- 0.07829 min 0.000610457 max 0.226153842 sum 39.1564394
-# target 50% 0.00135783
-# target 78% 0.003
-# target 79% 0.005
-# target 80% 0.01
-# target 81% 0.0241667
-# target 82% 0.200979
-# target 90% 0.212168
-# target 95% 0.219161
+>= -1.02916 <= -0.001 , -0.515078 , 77.58, 768
+> 0.009 <= 0.01 , 0.0095 , 77.78, 2
+> 0.011 <= 0.013 , 0.012 , 77.98, 2
+> 0.019 <= 0.024 , 0.0215 , 78.28, 3
+> 0.024 <= 0.029 , 0.0265 , 79.09, 8
+> 0.029 <= 0.034 , 0.0315 , 79.70, 6
+> 0.034 <= 0.039 , 0.0365 , 81.01, 13
+> 0.039 <= 0.044 , 0.0415 , 82.53, 15
+> 0.044 <= 0.0489091 , 0.0464545 , 100.00, 173
+# target 50% -0.366954
+WARNING 77.58% of sleep were falling behind
+Aggregated Function Time : count 1000 avg 0.043819725 +/- 0.08189 min 0.000641534 max 0.226637935 sum 43.8197251
+# target 50% 0.00150888
+# target 78% 0.009
+# target 79% 0.03
+# target 80% 0.201268
+# target 81% 0.202537
+# target 82% 0.203805
+# target 90% 0.213953
+# target 95% 0.220296
 Error cases : count 0 avg 0 +/- 0 min 0 max 0 sum 0
 # Socket and IP used for each connection:
 ...
@@ -983,20 +997,20 @@ Uniform: false, Jitter: false
 IP addresses distribution:
 10.96.144.44:8080: 10
 Code 200 : 1000 (100.0 %)
-All done 1000 calls (plus 0 warmup) 39.156 ms avg, 182.8 qps
+All done 1000 calls (plus 0 warmup) 43.820 ms avg, 177.4 qps
 ```
 
 如上测试结果，请求全部成功，约20%的请求响应时间大于200 毫秒:
 
 ```bash
-# target 50% 0.00135783
-# target 78% 0.003
-# target 79% 0.005
-# target 80% 0.01
-# target 81% 0.0241667
-# target 82% 0.200979
-# target 90% 0.212168
-# target 95% 0.219161
+# target 50% 0.00150888
+# target 78% 0.009
+# target 79% 0.03
+# target 80% 0.201268
+# target 81% 0.202537
+# target 82% 0.203805
+# target 90% 0.213953
+# target 95% 0.220296
 
 Code 200 : 1000 (100.0 %)
 ```
@@ -1017,7 +1031,8 @@ spec:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
         minRequestAmount: 200           #熔断触发的最小请求数
-        errorRatioThreshold: 0.10       #错误比率触发阈值
+        slowTimeThreshold: 200ms        #慢调用耗时触发阈值
+        slowRatioThreshold: 0.10        #慢调用比率触发阈值
         degradedTimeWindow: 1m          #降级持续时间
 EOF
 ```
@@ -1036,32 +1051,60 @@ kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio loa
 正确返回结果类似于:
 
 ```bash
-Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:10
-Aggregated Function Time : count 1000 avg 0.0016429267 +/- 0.0004358 min 0.000533189 max 0.00474449 sum 1.64292672
-# target 50% 0.00149561
-# target 75% 0.00180928
-# target 90% 0.00199749
-# target 99% 0.00297778
-# target 99.9% 0.00437225
-Error cases : count 894 avg 0.0017435252 +/- 0.0002813 min 0.000554536 max 0.004430205 sum 1.55871156
+Fortio 1.38.0 running at 200 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=200ms:20
+Aggregated Sleep Time : count 990 avg -0.0016134055 +/- 0.1146 min -0.731601499 max 0.049559005 sum -1.59727145
+# range, mid point, percentile, count
+>= -0.731601 <= -0.001 , -0.366301 , 19.09, 189
+> 0.011 <= 0.013 , 0.012 , 19.19, 1
+> 0.015 <= 0.017 , 0.016 , 19.39, 2
+> 0.019 <= 0.024 , 0.0215 , 19.49, 1
+> 0.024 <= 0.029 , 0.0265 , 19.90, 4
+> 0.029 <= 0.034 , 0.0315 , 20.51, 6
+> 0.034 <= 0.039 , 0.0365 , 20.71, 2
+> 0.039 <= 0.044 , 0.0415 , 26.87, 61
+> 0.044 <= 0.049 , 0.0465 , 99.80, 722
+> 0.049 <= 0.049559 , 0.0492795 , 100.00, 2
+# target 50% 0.0455859
+WARNING 19.09% of sleep were falling behind
+Aggregated Function Time : count 1000 avg 0.013123129 +/- 0.04263 min 0.000266291 max 0.224173911 sum 13.1231293
+# target 50% 0.00382264
+# target 78% 0.00487925
+# target 79% 0.00491698
+# target 80% 0.00495472
+# target 81% 0.00499245
+# target 82% 0.00507547
+# target 90% 0.00583019
+# target 95% 0.02125
+Error cases : count 800 avg 0.003939414 +/- 0.001192 min 0.000266291 max 0.008193708 sum 3.15153121
 # Socket and IP used for each connection:
-[0] 894 socket used, resolved to [10.96.150.163:8080] connection timing : count 894 avg 0.00011459571 +/- 4.073e-05 min 6.3708e-05 max 0.000751849 sum 0.102448566
-Sockets used: 894 (for perfect keepalive, would be 1)
+...
+Sockets used: 800 (for perfect keepalive, would be 10)
 Uniform: false, Jitter: false
 IP addresses distribution:
-10.96.150.163:8080: 894
-Code 200 : 106 (10.6 %)
-Code 409 : 883 (88.3 %)
-Code 511 : 11 (1.1 %)
-All done 1000 calls (plus 0 warmup) 1.643 ms avg, 608.5 qps
+10.96.144.44:8080: 800
+Code 200 : 200 (20.0 %)
+Code 409 : 800 (80.0 %)
+All done 1000 calls (plus 0 warmup) 13.123 ms avg, 199.8 qps
 ```
 
-~~如上测试结果，近似 10%的错误率(100次错误)后，发生熔断:~~
+如上测试结果， 200 个成功请求后，熔断，错误码409:
 
 ```bash
-Code 200 : 106 (10.6 %)
-Code 409 : 883 (88.3 %)
-Code 511 : 11 (1.1 %)
+Code 200 : 200 (20.0 %)
+Code 409 : 800 (80.0 %)
+```
+
+查看 sidecar 日志:
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl logs -n circuit-breaking "$fortio_client" -c sidecar | grep circuit_breaker
+```
+
+如sidecar 日志所示，200个请求中，39个慢响应，断路器状态为open:
+
+```bash
+2022-09-30 09:25:14.104 [INF] [circuit_breaker] tick/delay/degraded/total/slowAmount/errorAmount (open)  check circuit-breaking/fortio|8080 4 0 true 200 39 0
 ```
 
 降级持续时间 1 分钟，期间再次执行，返回结果:
@@ -1070,12 +1113,10 @@ Code 511 : 11 (1.1 %)
 Code 409 : 1000 (100.0 %)
 ```
 
-1分钟后执行，返回结果:
+ 1 分钟后，查看 sidecar 日志，断路器状态为close:
 
 ```bash
-Code 200 : 51 (5.1 %)
-Code 409 : 938 (93.8 %)
-Code 511 : 11 (1.1 %)
+2022-09-30 08:48:52.202 [INF] [circuit_breaker] tick/delay/degraded/total/slowAmount/errorAmount (close) timer circuit-breaking/fortio|8080 0 61 false 0 2 0
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -1101,49 +1142,52 @@ kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio loa
 
 ```bash
 Fortio 1.38.0 running at 200 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=200ms:20
-Aggregated Sleep Time : count 990 avg -0.14824273 +/- 0.1789 min -0.720912436 max 0.049244595 sum -146.760305
+Aggregated Sleep Time : count 990 avg -0.13312857 +/- 0.1666 min -0.828479091 max 0.049586692 sum -131.797284
 # range, mid point, percentile, count
->= -0.720912 <= -0.001 , -0.360956 , 71.72, 710
-> 0.019 <= 0.024 , 0.0215 , 71.92, 2
-> 0.024 <= 0.029 , 0.0265 , 73.03, 11
-> 0.029 <= 0.034 , 0.0315 , 73.84, 8
-> 0.034 <= 0.039 , 0.0365 , 75.05, 12
-> 0.039 <= 0.044 , 0.0415 , 77.17, 21
-> 0.044 <= 0.049 , 0.0465 , 99.70, 223
-> 0.049 <= 0.0492446 , 0.0491223 , 100.00, 3
-# target 50% -0.219309
-WARNING 71.72% of sleep were falling behind
-Aggregated Function Time : count 1000 avg 0.039156439 +/- 0.07829 min 0.000610457 max 0.226153842 sum 39.1564394
-# target 50% 0.00135783
-# target 78% 0.003
-# target 79% 0.005
-# target 80% 0.01
-# target 81% 0.0241667
-# target 82% 0.200979
-# target 90% 0.212168
-# target 95% 0.219161
+>= -0.828479 <= -0.001 , -0.41474 , 74.14, 734
+> 0.005 <= 0.006 , 0.0055 , 74.24, 1
+> 0.008 <= 0.009 , 0.0085 , 74.34, 1
+> 0.017 <= 0.019 , 0.018 , 74.44, 1
+> 0.019 <= 0.024 , 0.0215 , 75.45, 10
+> 0.024 <= 0.029 , 0.0265 , 75.66, 2
+> 0.029 <= 0.034 , 0.0315 , 76.57, 9
+> 0.034 <= 0.039 , 0.0365 , 77.37, 8
+> 0.039 <= 0.044 , 0.0415 , 79.49, 21
+> 0.044 <= 0.049 , 0.0465 , 99.29, 196
+> 0.049 <= 0.0495867 , 0.0492933 , 100.00, 7
+# target 50% -0.270806
+WARNING 74.14% of sleep were falling behind
+Aggregated Function Time : count 1000 avg 0.041104821 +/- 0.07984 min 0.000588325 max 0.227944227 sum 41.1048208
+# target 50% 0.00142012
+# target 78% 0.007
+# target 79% 0.0116667
+# target 80% 0.0275
+# target 81% 0.200855
+# target 82% 0.202281
+# target 90% 0.213687
+# target 95% 0.220816
 Error cases : count 0 avg 0 +/- 0 min 0 max 0 sum 0
 # Socket and IP used for each connection:
 ...
-Sockets used: 10 (for perfect keepalive, would be 10)
+Sockets used: 20 (for perfect keepalive, would be 10)
 Uniform: false, Jitter: false
 IP addresses distribution:
-10.96.144.44:8080: 10
+10.96.144.44:8080: 20
 Code 200 : 1000 (100.0 %)
-All done 1000 calls (plus 0 warmup) 39.156 ms avg, 182.8 qps
+All done 1000 calls (plus 0 warmup) 41.105 ms avg, 179.3 qps
 ```
 
 如上测试结果，请求全部成功，约20%的请求响应时间大于200 毫秒:
 
 ```bash
-# target 50% 0.00135783
-# target 78% 0.003
-# target 79% 0.005
-# target 80% 0.01
-# target 81% 0.0241667
-# target 82% 0.200979
-# target 90% 0.212168
-# target 95% 0.219161
+# target 50% 0.00142012
+# target 78% 0.007
+# target 79% 0.0116667
+# target 80% 0.0275
+# target 81% 0.200855
+# target 82% 0.202281
+# target 90% 0.213687
+# target 95% 0.220816
 
 Code 200 : 1000 (100.0 %)
 ```
@@ -1164,7 +1208,8 @@ spec:
       circuitBreaking:                  #7层熔断策略
         statTimeWindow: 1m              #熔断统计时间窗口
         minRequestAmount: 200           #熔断触发的最小请求数
-        errorRatioThreshold: 0.10       #错误比率触发阈值
+        slowTimeThreshold: 200ms        #慢调用耗时触发阈值
+        slowRatioThreshold: 0.10        #慢调用比率触发阈值
         degradedTimeWindow: 1m          #降级持续时间
         degradedStatusCode: 520         #降级回写状态码
 EOF
@@ -1184,46 +1229,72 @@ kubectl exec "$fortio_client" -n circuit-breaking -c fortio-client -- fortio loa
 正确返回结果类似于:
 
 ```bash
-Fortio 1.38.0 running at 0 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?status=511:20
-Aggregated Function Time : count 1000 avg 0.0013628777 +/- 0.0006277 min 0.000541009 max 0.00479157 sum 1.36287773
-# target 50% 0.00120215
-# target 75% 0.00173978
-# target 90% 0.0022377
-# target 99% 0.00297541
-# target 99.9% 0.00452771
-Error cases : count 588 avg 0.0016197162 +/- 0.0004588 min 0.000604428 max 0.004763581 sum 0.952393106
+Fortio 1.38.0 running at 200 queries per second, 8->8 procs, for 1000 calls: http://fortio.circuit-breaking.svc.cluster.local:8080/echo?delay=200ms:20
+Aggregated Sleep Time : count 990 avg -0.31251815 +/- 0.6864 min -2.954207336 max 0.049888146 sum -309.392973
+# range, mid point, percentile, count
+>= -2.95421 <= -0.001 , -1.4776 , 45.25, 448
+> 0 <= 0.001 , 0.0005 , 45.35, 1
+> 0.011 <= 0.013 , 0.012 , 45.45, 1
+> 0.017 <= 0.019 , 0.018 , 45.56, 1
+> 0.024 <= 0.029 , 0.0265 , 46.57, 10
+> 0.029 <= 0.034 , 0.0315 , 47.17, 6
+> 0.034 <= 0.039 , 0.0365 , 47.78, 6
+> 0.039 <= 0.044 , 0.0415 , 50.51, 27
+> 0.044 <= 0.049 , 0.0465 , 99.80, 488
+> 0.049 <= 0.0498881 , 0.0494441 , 100.00, 2
+# target 50% 0.0430741
+WARNING 45.25% of sleep were falling behind
+Aggregated Function Time : count 1000 avg 0.025091625 +/- 0.1708 min 0.000449334 max 3.003751651 sum 25.0916245
+# target 50% 0.00262044
+# target 78% 0.00444355
+# target 79% 0.00452419
+# target 80% 0.00460484
+# target 81% 0.00468548
+# target 82% 0.00476613
+# target 90% 0.00594444
+# target 95% 0.214394
+Error cases : count 684 avg 0.016295243 +/- 0.1983 min 0.000449334 max 3.003751651 sum 11.145946
 # Socket and IP used for each connection:
-[0] 588 socket used, resolved to [10.96.150.163:8080] connection timing : count 588 avg 0.00011578365 +/- 3.81e-05 min 5.3573e-05 max 0.000454821 sum 0.068080784
-Sockets used: 588 (for perfect keepalive, would be 1)
+...
+Sockets used: 694 (for perfect keepalive, would be 10)
 Uniform: false, Jitter: false
 IP addresses distribution:
-10.96.150.163:8080: 588
-Code 200 : 412 (41.2 %)
-Code 511 : 101 (10.1 %)
-Code 520 : 487 (48.7 %)
-All done 1000 calls (plus 0 warmup) 1.363 ms avg, 733.6 qps
+10.96.144.44:8080: 694
+Code 200 : 316 (31.6 %)
+Code 520 : 684 (68.4 %)
+All done 1000 calls (plus 0 warmup) 25.092 ms avg, 199.8 qps
 ```
 
-如上测试结果，近似 10%的错误率(100次错误)后，发生熔断，状态码回写 409为 520:
+如上测试结果， 316 个成功请求后，发生熔断，回写状态码为 520:
 
 ```bash
-Code 200 : 412 (41.2 %)
-Code 511 : 101 (10.1 %)
-Code 520 : 487 (48.7 %)
+Code 200 : 316 (31.6 %)
+Code 520 : 684 (68.4 %)
+```
+
+查看 sidecar 日志:
+
+```bash
+fortio_client="$(kubectl get pod -n circuit-breaking -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+kubectl logs -n circuit-breaking "$fortio_client" -c sidecar | grep circuit_breaker
+```
+
+如sidecar 日志所示，200个请求中，31个慢响应，断路器状态为open:
+
+```bash
+2022-09-30 09:29:03.081 [INF] [circuit_breaker] tick/delay/degraded/total/slowAmount/errorAmount (open)  check circuit-breaking/fortio|8080 2 0 true 200 31 0
 ```
 
 降级持续时间 1 分钟，期间再次执行，返回结果:
 
 ```bash
-Code 520 : 1000 (100.0 %)
+Code 409 : 1000 (100.0 %)
 ```
 
-1分钟后执行，返回结果:
+ 1 分钟后，查看 sidecar 日志，断路器状态为close:
 
 ```bash
-Code 200 : 388 (38.8 %)
-Code 511 : 101 (10.1 %)
-Code 520 : 511 (51.1 %)
+2022-09-30 08:48:52.202 [INF] [circuit_breaker] tick/delay/degraded/total/slowAmount/errorAmount (close) timer circuit-breaking/fortio|8080 0 61 false 0 2 0
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -1232,5 +1303,5 @@ Code 520 : 511 (51.1 %)
 kubectl delete upstreamtrafficsettings -n circuit-breaking http-circuit-breaking
 ```
 
-
+#### 
 
