@@ -52,7 +52,7 @@ spec:
       serviceAccountName: sleep
       containers:
       - name: sleep
-        image: localhost:5000/flomesh/curl:latest
+        image: cybwan/curl:latest
         command: ["/bin/sleep", "infinity"]
         imagePullPolicy: IfNotPresent
         volumeMounts:
