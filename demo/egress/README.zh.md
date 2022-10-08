@@ -22,7 +22,7 @@ osm install \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.1 \
+    --set=osm.image.tag=1.2.1-alpha.2 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -48,17 +48,19 @@ osm install \
 
 ```bash
 #模拟外部服务
-kubectl create namespace httpbin-ext
-kubectl apply -n httpbin-ext -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress/httpbin.yaml
+kubectl create namespace egress-server
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress/httpbin.yaml
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/server.yaml
 
 #模拟业务服务
-kubectl create namespace egress
-osm namespace add egress
-kubectl apply -n egress -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress/curl.yaml
+kubectl create namespace egress-client
+osm namespace add egress-client
+kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/client.yaml
 
 #等待依赖的 POD 正常启动
-kubectl wait --for=condition=ready pod -n httpbin-ext -l app=httpbin --timeout=180s
-kubectl wait --for=condition=ready pod -n egress -l app=curl --timeout=180s
+kubectl wait --for=condition=ready pod -n egress-server -l app=httpbin --timeout=180s
+kubectl wait --for=condition=ready pod -n egress-server -l app=server --timeout=180s
+kubectl wait --for=condition=ready pod -n egress-client -l app=client --timeout=180s
 ```
 
 ### 3.3 场景测试一：基于域名的外部访问
@@ -80,8 +82,8 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 ### 3.3.3 测试指令
 
 ```bash
-curl_client="$(kubectl get pod -n egress -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n egress -c curl -- curl -sI httpbin.httpbin-ext.svc.cluster.local:14001
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -sI httpbin.egress-server.svc.cluster.local:14001
 ```
 
 ### 3.4.4 测试结果
@@ -89,7 +91,7 @@ kubectl exec ${curl_client} -n egress -c curl -- curl -sI httpbin.httpbin-ext.sv
 正确返回结果类似于:
 
 ```bash
-command terminated with exit code 7
+command terminated with exit code 52
 ```
 
 ### 3.4.5 设置Egress目的策略
@@ -100,14 +102,14 @@ kind: Egress
 apiVersion: policy.openservicemesh.io/v1alpha1
 metadata:
   name: httpbin-14001
-  namespace: egress
+  namespace: egress-client
 spec:
   sources:
   - kind: ServiceAccount
-    name: curl
-    namespace: egress
+    name: client
+    namespace: egress-client
   hosts:
-  - httpbin.httpbin-ext.svc.cluster.local
+  - httpbin.egress-server.svc.cluster.local
   ports:
   - number: 14001
     protocol: http
@@ -117,8 +119,8 @@ EOF
 ### 3.3.6 测试指令
 
 ```bash
-curl_client="$(kubectl get pod -n egress -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n egress -c curl -- curl -sI httpbin.httpbin-ext.svc.cluster.local:14001
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -sI httpbin.egress-server.svc.cluster.local:14001
 ```
 
 ### 3.3.7 测试结果
@@ -127,19 +129,20 @@ kubectl exec ${curl_client} -n egress -c curl -- curl -sI httpbin.httpbin-ext.sv
 
 ```bash
 HTTP/1.1 200 OK
-server: gunicorn/19.9.0
-date: Wed, 21 Sep 2022 23:41:46 GMT
+server: pipy
+date: Sat, 08 Oct 2022 23:38:14 GMT
 content-type: text/html; charset=utf-8
 content-length: 9593
 access-control-allow-origin: *
 access-control-allow-credentials: true
+x-pipy-upstream-service-time: 3
 connection: keep-alive
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-kubectl delete egress -n egress httpbin-14001
+kubectl delete egress -n egress-client httpbin-14001
 ```
 
 ### 3.4 场景测试二：基于 IP 范围的外部访问
@@ -161,9 +164,9 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 ### 3.4.3 测试指令
 
 ```bash
-httpbin_pod_ip="$(kubectl get pod -n httpbin-ext -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
-curl_client="$(kubectl get pod -n egress -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n egress -c curl -- curl -sI ${httpbin_pod_ip}:14001
+httpbin_pod_ip="$(kubectl get pod -n egress-server -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -sI ${httpbin_pod_ip}:14001
 ```
 
 ### 3.4.4 测试结果
@@ -171,24 +174,24 @@ kubectl exec ${curl_client} -n egress -c curl -- curl -sI ${httpbin_pod_ip}:1400
 正确返回结果类似于:
 
 ```bash
-command terminated with exit code 7
+command terminated with exit code 52
 ```
 
 ### 3.4.5 设置Egress目的策略
 
 ```bash
-httpbin_pod_ip="$(kubectl get pod -n httpbin-ext -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
+httpbin_pod_ip="$(kubectl get pod -n egress-server -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: Egress
 apiVersion: policy.openservicemesh.io/v1alpha1
 metadata:
   name: httpbin-14001
-  namespace: egress
+  namespace: egress-client
 spec:
   sources:
   - kind: ServiceAccount
-    name: curl
-    namespace: egress
+    name: client
+    namespace: egress-client
   ipAddresses:
   - ${httpbin_pod_ip}/32
   ports:
@@ -200,9 +203,9 @@ EOF
 ### 3.4.6 测试指令
 
 ```bash
-httpbin_pod_ip="$(kubectl get pod -n httpbin-ext -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
-curl_client="$(kubectl get pod -n egress -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n egress -c curl -- curl -sI ${httpbin_pod_ip}:14001
+httpbin_pod_ip="$(kubectl get pod -n egress-server -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -sI ${httpbin_pod_ip}:14001
 ```
 
 ### 3.4.7 测试结果
@@ -211,17 +214,17 @@ kubectl exec ${curl_client} -n egress -c curl -- curl -sI ${httpbin_pod_ip}:1400
 
 ```bash
 HTTP/1.1 200 OK
-server: gunicorn/19.9.0
-date: Wed, 21 Sep 2022 23:30:15 GMT
-content-type: text/html; charset=utf-8
-content-length: 9593
-access-control-allow-origin: *
-access-control-allow-credentials: true
-connection: keep-alive
+Server: gunicorn/19.9.0
+Date: Sat, 08 Oct 2022 23:41:39 GMT
+Connection: keep-alive
+Content-Type: text/html; charset=utf-8
+Content-Length: 9593
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-kubectl delete egress -n egress httpbin-14001
+kubectl delete egress -n egress-client httpbin-14001
 ```
