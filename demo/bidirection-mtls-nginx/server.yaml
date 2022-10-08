@@ -38,6 +38,6 @@ spec:
       - image: cybwan/mtls-egress-demo-server
         imagePullPolicy: IfNotPresent
         name: server
-        command: ["server"]
+        command: ["/server"]
         ports:
         - containerPort: 8443
