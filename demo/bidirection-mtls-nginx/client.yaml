@@ -1,43 +1,43 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: middle
+  name: client
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: middle
+  name: client
   labels:
-    app: middle
-    service: middle
+    app: client
+    service: client
 spec:
   ports:
   - name: http
-    port: 8080
+    port: 80
   selector:
-    app: middle
+    app: client
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: middle
+  name: client
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: middle
+      app: client
   template:
     metadata:
       labels:
-        app: middle
+        app: client
     spec:
-      serviceAccountName: middle
+      serviceAccountName: client
       nodeSelector:
         kubernetes.io/os: linux
       containers:
-      - image: cybwan/mtls-egress-demo-middle
+      - image: cybwan/mtls-egress-demo-client
         imagePullPolicy: IfNotPresent
-        name: middle
-        command: ["/middle"]
+        name: client
+        command: ["/bin/sleep", "infinity"]
         ports:
-        - containerPort: 8080
+        - containerPort: 80

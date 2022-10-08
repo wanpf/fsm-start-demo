@@ -37,7 +37,7 @@ spec:
       containers:
       - image: cybwan/mtls-egress-demo-middle-mtls
         imagePullPolicy: IfNotPresent
-        name: server
+        name: middle
         command: ["/middle"]
         ports:
         - containerPort: 8080
