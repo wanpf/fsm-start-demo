@@ -6,7 +6,7 @@
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
 release=v1.2.1-alpha.2
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -72,14 +72,12 @@ kubectl apply -n egress-middle -f https://raw.githubusercontent.com/cybwan/osm-e
 
 #模拟外部客户端
 kubectl create namespace egress-client
-#kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/client.yaml
-kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress/curl.yaml
+kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/client.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n egress-server -l app=server --timeout=180s
 kubectl wait --for=condition=ready pod -n egress-middle -l app=middle --timeout=180s
-#kubectl wait --for=condition=ready pod -n egress-client -l app=client --timeout=180s
-kubectl wait --for=condition=ready pod -n egress-client -l app=curl --timeout=180s
+kubectl wait --for=condition=ready pod -n egress-client -l app=client --timeout=180s
 ```
 
 ### 4.2 HTTP Ingress&mTLS Egress测试
@@ -87,7 +85,7 @@ kubectl wait --for=condition=ready pod -n egress-client -l app=curl --timeout=18
 #### 4.2.1 测试指令
 
 ```bash
-kubectl exec "$(kubectl get pod -n egress-client -l app=curl -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx:80/time -H "Host: middle.egress-middle.svc.cluster.local"
+kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx:80/time -H "Host: middle.egress-middle.svc.cluster.local"
 ```
 
 #### 4.2.2 测试结果
@@ -215,7 +213,7 @@ EOF
 #### 4.2.9 测试指令
 
 ```bash
-kubectl exec "$(kubectl get pod -n egress-client -l app=curl -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx:80/time -H "Host: middle.egress-middle.svc.cluster.local"
+kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx:80/time -H "Host: middle.egress-middle.svc.cluster.local"
 ```
 
 #### 4.2.10 测试结果

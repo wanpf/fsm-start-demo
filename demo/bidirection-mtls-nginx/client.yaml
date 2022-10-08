@@ -36,7 +36,7 @@ spec:
         kubernetes.io/os: linux
       containers:
       - image: cybwan/mtls-egress-demo-client
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: client
         command: ["/bin/sleep", "infinity"]
         ports:
