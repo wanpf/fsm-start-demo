@@ -33,10 +33,9 @@ spec:
     spec:
       serviceAccountName: httpbin
       nodeSelector:
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
-      - image: kennethreitz/httpbin
+      - image: flomesh/httpbin:ken
         imagePullPolicy: IfNotPresent
         name: httpbin
         command: ["gunicorn", "-b", "0.0.0.0:14001", "httpbin:app", "-k", "gevent"]
