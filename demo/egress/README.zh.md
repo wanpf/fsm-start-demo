@@ -43,6 +43,11 @@ osm install \
     - tcp
   - 基于IP范围，支持的协议：
     - tcp
+- 支持的数据类型
+  - 明文传输
+  - 加密传输
+    - mTLS
+
 
 ### 3.2 部署业务 POD
 
@@ -63,30 +68,30 @@ kubectl wait --for=condition=ready pod -n egress-server -l app=server --timeout=
 kubectl wait --for=condition=ready pod -n egress-client -l app=client --timeout=180s
 ```
 
-### 3.3 场景测试一：基于域名的外部访问
+### 3.3 场景测试一：基于域名的外部访问，明文通讯
 
-### 3.3.1 禁用Egress目的宽松模式
+#### 3.3.1 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-### 3.3.2 启用Egress目的策略模式
+#### 3.3.2 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-### 3.3.3 测试指令
+#### 3.3.3 测试指令
 
 ```bash
 curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec ${curl_client} -n egress-client -c client -- curl -sI httpbin.egress-server.svc.cluster.local:14001
 ```
 
-### 3.4.4 测试结果
+#### 3.4.4 测试结果
 
 正确返回结果类似于:
 
@@ -94,7 +99,7 @@ kubectl exec ${curl_client} -n egress-client -c client -- curl -sI httpbin.egres
 command terminated with exit code 52
 ```
 
-### 3.4.5 设置Egress目的策略
+#### 3.4.5 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -116,14 +121,14 @@ spec:
 EOF
 ```
 
-### 3.3.6 测试指令
+#### 3.3.6 测试指令
 
 ```bash
 curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec ${curl_client} -n egress-client -c client -- curl -sI httpbin.egress-server.svc.cluster.local:14001
 ```
 
-### 3.3.7 测试结果
+#### 3.3.7 测试结果
 
 正确返回结果类似于:
 
@@ -145,23 +150,23 @@ connection: keep-alive
 kubectl delete egress -n egress-client httpbin-14001
 ```
 
-### 3.4 场景测试二：基于 IP 范围的外部访问
+### 3.4 场景测试二：基于 IP 范围的外部访问，明文通讯
 
-### 3.4.1 禁用Egress目的宽松模式
+#### 3.4.1 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-### 3.4.2 启用Egress目的策略模式
+#### 3.4.2 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-### 3.4.3 测试指令
+#### 3.4.3 测试指令
 
 ```bash
 httpbin_pod_ip="$(kubectl get pod -n egress-server -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
@@ -169,7 +174,7 @@ curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.ite
 kubectl exec ${curl_client} -n egress-client -c client -- curl -sI ${httpbin_pod_ip}:14001
 ```
 
-### 3.4.4 测试结果
+#### 3.4.4 测试结果
 
 正确返回结果类似于:
 
@@ -177,7 +182,7 @@ kubectl exec ${curl_client} -n egress-client -c client -- curl -sI ${httpbin_pod
 command terminated with exit code 52
 ```
 
-### 3.4.5 设置Egress目的策略
+#### 3.4.5 设置Egress目的策略
 
 ```bash
 httpbin_pod_ip="$(kubectl get pod -n egress-server -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
@@ -200,7 +205,7 @@ spec:
 EOF
 ```
 
-### 3.4.6 测试指令
+#### 3.4.6 测试指令
 
 ```bash
 httpbin_pod_ip="$(kubectl get pod -n egress-server -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
@@ -208,7 +213,7 @@ curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.ite
 kubectl exec ${curl_client} -n egress-client -c client -- curl -sI ${httpbin_pod_ip}:14001
 ```
 
-### 3.4.7 测试结果
+#### 3.4.7 测试结果
 
 正确返回结果类似于:
 
@@ -228,3 +233,367 @@ Access-Control-Allow-Credentials: true
 ```bash
 kubectl delete egress -n egress-client httpbin-14001
 ```
+
+### 3.5 场景测试三：基于域名的外部访问，业务自实现 mTLS
+
+#### 3.5.1 禁用Egress目的宽松模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+```
+
+#### 3.5.2 启用Egress目的策略模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+```
+
+#### 3.5.3 测试指令
+
+```bash
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi https://server.egress-server.svc.cluster.local:8443/time --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
+```
+
+#### 3.5.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 35
+```
+
+#### 3.5.5 设置Egress目的策略
+
+```bash
+kubectl apply -f - <<EOF
+kind: Egress
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: server-8443
+  namespace: egress-client
+spec:
+  sources:
+  - kind: ServiceAccount
+    name: client
+    namespace: egress-client
+  hosts:
+  - server.egress-server.svc.cluster.local
+  ports:
+  - number: 8443
+    protocol: https
+EOF
+```
+
+#### 3.5.6 测试指令
+
+```bash
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi https://server.egress-server.svc.cluster.local:8443/time --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
+```
+
+#### 3.5.7 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/2 200 
+content-type: text/plain; charset=utf-8
+content-length: 75
+date: Sun, 09 Oct 2022 00:24:03 GMT
+
+The current time: 2022-10-09 00:24:03.830082283 +0000 UTC m=+2154.622989759
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete egress -n egress-client server-8443
+```
+
+### 3.6 场景测试四：基于域名的外部访问，边车mTLS
+
+#### 3.6.1 禁用Egress目的宽松模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+```
+
+#### 3.6.2 启用Egress目的策略模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+```
+
+#### 3.6.3 测试指令
+
+```bash
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi http://server.egress-server.svc.cluster.local:8443/time
+```
+
+#### 3.6.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 52
+```
+
+#### 3.6.5 创建Egress mTLS Secret
+
+```bash
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.crt -o client.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.key -o client.key
+
+kubectl create secret generic -n osm-system egress-client-cert \
+  --from-file=ca.crt=./ca.crt \
+  --from-file=tls.crt=./client.crt \
+  --from-file=tls.key=./client.key 
+```
+
+#### 3.6.6 设置Egress目的策略
+
+```bash
+kubectl apply -f - <<EOF
+kind: Egress
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: server-8443
+  namespace: egress-client
+spec:
+  sources:
+  - kind: ServiceAccount
+    name: client
+    namespace: egress-client
+    mtls:
+      sn: 1
+      expiration: 2030-1-1 00:00:00
+      secret:
+        name: egress-client-cert
+        namespace: osm-system
+  hosts:
+  - server.egress-server.svc.cluster.local
+  ports:
+  - number: 8443
+    protocol: http
+EOF
+```
+
+#### 3.6.7 测试指令
+
+```bash
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi http://server.egress-server.svc.cluster.local:8443/time
+```
+
+#### 3.6.8 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/2 200 
+content-type: text/plain; charset=utf-8
+content-length: 75
+date: Sun, 09 Oct 2022 00:24:03 GMT
+
+The current time: 2022-10-09 00:24:03.830082283 +0000 UTC m=+2154.622989759
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete egress -n egress-client server-8443
+kubectl delete secrets -n osm-system egress-client-cert
+```
+
+### 3.7 场景测试五：基于 IP 范围的外部访问，业务自实现 mTLS
+
+#### 3.7.1 禁用Egress目的宽松模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+```
+
+#### 3.7.2 启用Egress目的策略模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+```
+
+#### 3.7.3 测试指令
+
+```bash
+server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi https://$server_pod_ip:8443/time -H "Host: server.egress-server.svc.cluster.local" --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
+```
+
+#### 3.7.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 35
+```
+
+#### 3.7.5 设置Egress目的策略
+
+```bash
+server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
+kubectl apply -f - <<EOF
+kind: Egress
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: server-8443
+  namespace: egress-client
+spec:
+  sources:
+  - kind: ServiceAccount
+    name: client
+    namespace: egress-client
+  ipAddresses:
+  - ${server_pod_ip}/32
+  ports:
+  - number: 8443
+    protocol: tcp
+EOF
+```
+
+#### 3.7.6 测试指令
+
+```bash
+server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi https://$server_pod_ip:8443/time -H "Host: server.egress-server.svc.cluster.local" --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
+```
+
+#### 3.7.7 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/2 200 
+content-type: text/plain; charset=utf-8
+content-length: 75
+date: Sun, 09 Oct 2022 00:48:33 GMT
+
+The current time: 2022-10-09 00:48:33.580642547 +0000 UTC m=+3625.463281090
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete egress -n egress-client server-8443
+```
+
+### 3.8 场景测试六：基于 IP 范围的外部访问，边车mTLS
+
+#### 3.8.1 禁用Egress目的宽松模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+```
+
+#### 3.8.2 启用Egress目的策略模式
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+```
+
+#### 3.8.3 测试指令
+
+```bash
+server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -si http://$server_pod_ip:8443/time -H "Host: server.egress-server.svc.cluster.local"
+```
+
+#### 3.8.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 52
+```
+
+#### 3.8.5 创建Egress mTLS Secret
+
+```bash
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.crt -o client.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.key -o client.key
+
+kubectl create secret generic -n osm-system egress-client-cert \
+  --from-file=ca.crt=./ca.crt \
+  --from-file=tls.crt=./client.crt \
+  --from-file=tls.key=./client.key 
+```
+
+#### 3.8.6 设置Egress目的策略
+
+```bash
+server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
+kubectl apply -f - <<EOF
+kind: Egress
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: server-8443
+  namespace: egress-client
+spec:
+  sources:
+  - kind: ServiceAccount
+    name: client
+    namespace: egress-client
+    mtls:
+      sn: 1
+      expiration: 2030-1-1 00:00:00
+      secret:
+        name: egress-client-cert
+        namespace: osm-system
+  ipAddresses:
+  - ${server_pod_ip}/32
+  ports:
+  - number: 8443
+    protocol: tcp
+EOF
+```
+
+#### 3.8.7 测试指令
+
+```bash
+server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
+curl_client="$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi http://$server_pod_ip:8443/time -H "Host: server.egress-server.svc.cluster.local"
+```
+
+#### 3.8.8 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/2 200 
+content-type: text/plain; charset=utf-8
+content-length: 75
+date: Sun, 09 Oct 2022 00:48:33 GMT
+
+The current time: 2022-10-09 00:48:33.580642547 +0000 UTC m=+3625.463281090
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete egress -n egress-client server-8443
+kubectl delete secrets -n osm-system egress-client-cert
+```
+
+### 

@@ -947,7 +947,7 @@ EOF
 Client --**mtls**--> Nginx Ingress --**mtls**--> sidecar --> Middle --> sidecar --**egress mtls**--> Server
 
 ```bash
-kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://ingress-nginx-controller.ingress-nginx/time  --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
+kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://ingress-nginx-controller.ingress-nginx/time --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
 ```
 
 #### 4.5.15 测试结果
