@@ -1,4 +1,4 @@
-# OSM Edge Bidirectional mTLS 测试
+# OSM Edge 双臂 mTLS 测试
 
 ## 1. 下载并安装 osm-edge 命令行工具
 
@@ -56,9 +56,13 @@ kubectl wait --namespace ingress-nginx \
   --timeout=180s
 ```
 
-## 4. mTLS Egress 测试
+## 4. 双臂 mTLS 测试
 
-### 4.1 部署业务 POD
+### 4.1 技术概念
+
+<img src="https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/Bidirectional_mTLS.png" alt="Bidirectional_mTLS" style="zoom:80%;" />
+
+### 4.2 部署业务 POD
 
 ```bash
 #模拟时间服务
@@ -80,9 +84,9 @@ kubectl wait --for=condition=ready pod -n egress-middle -l app=middle --timeout=
 kubectl wait --for=condition=ready pod -n egress-client -l app=client --timeout=180s
 ```
 
-### 4.2 场景测试一：HTTP Nginx & HTTP Ingress & mTLS Egress
+### 4.3 场景测试一：HTTP Nginx & HTTP Ingress & mTLS Egress
 
-#### 4.2.1 测试指令
+#### 4.3.1 测试指令
 
 流量路径: 
 
@@ -92,13 +96,13 @@ Client --**http**--> Nginx Ingress Controller
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/hello
 ```
 
-#### 4.2.2 测试结果
+#### 4.3.2 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 404 Not Found
-Date: Sat, 08 Oct 2022 14:22:35 GMT
+Date: Sun, 09 Oct 2022 08:36:48 GMT
 Content-Type: text/html
 Content-Length: 146
 Connection: keep-alive
@@ -112,7 +116,7 @@ Connection: keep-alive
 </html>
 ```
 
-#### 4.2.3 设置 Ingress 策略
+#### 4.3.3 设置 Ingress 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -136,7 +140,7 @@ spec:
 EOF
 ```
 
-#### 4.2.4 设置 IngressBackend 策略
+#### 4.3.4 设置 IngressBackend 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -158,7 +162,7 @@ spec:
 EOF
 ```
 
-#### 4.2.5 测试指令
+#### 4.3.5 测试指令
 
 流量路径: 
 
@@ -168,39 +172,39 @@ Client --**http**--> Nginx Ingress --**http** --> sidecar --> Middle
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/hello
 ```
 
-#### 4.2.6 测试结果
+#### 4.3.6 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
-Date: Sat, 08 Oct 2022 14:29:52 GMT
+Date: Sun, 09 Oct 2022 08:37:18 GMT
 Content-Type: text/plain; charset=utf-8
 Content-Length: 13
 Connection: keep-alive
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-txwv8
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 
 hello world.
 ```
 
-#### 4.2.7 禁用Egress目的宽松模式
+#### 4.3.7 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.2.8 启用Egress目的策略模式
+#### 4.3.8 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-#### 4.2.9 创建Egress mTLS Secret
+#### 4.3.9 创建Egress mTLS Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
@@ -213,7 +217,7 @@ kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=tls.key=./middle.key 
 ```
 
-#### 4.2.10 设置Egress目的策略
+#### 4.3.10 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -241,7 +245,7 @@ spec:
 EOF
 ```
 
-#### 4.2.11 测试指令
+#### 4.3.11 测试指令
 
 流量路径: 
 
@@ -251,22 +255,22 @@ Client --**http**--> Nginx Ingress --**http**--> sidecar --> Middle --> sidecar 
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/time
 ```
 
-#### 4.2.12 测试结果
+#### 4.3.12 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
-Date: Sat, 08 Oct 2022 14:33:21 GMT
+Date: Sun, 09 Oct 2022 08:38:03 GMT
 Content-Type: text/plain; charset=utf-8
-Content-Length: 75
+Content-Length: 74
 Connection: keep-alive
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-6c5bf6f9b6-m2hcg
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 
-The current time: 2022-10-08 14:33:21.371498416 +0000 UTC m=+741.549912520
+The current time: 2022-10-09 08:38:03.03610171 +0000 UTC m=+107.351638075
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -278,9 +282,9 @@ kubectl delete egress -n egress-middle server-8443
 kubectl delete secrets -n osm-system egress-middle-cert
 ```
 
-### 4.3 场景测试二：HTTP Nginx & mTLS Ingress & mTLS Egress
+### 4.4 场景测试二：HTTP Nginx & mTLS Ingress & mTLS Egress
 
-#### 4.3.1 测试指令
+#### 4.4.1 测试指令
 
 流量路径: 
 
@@ -290,13 +294,13 @@ Client --**http**--> Nginx Ingress Controller
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/hello
 ```
 
-#### 4.3.2 测试结果
+#### 4.4.2 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 404 Not Found
-Date: Sat, 08 Oct 2022 14:22:35 GMT
+Date: Sun, 09 Oct 2022 08:38:27 GMT
 Content-Type: text/html
 Content-Length: 146
 Connection: keep-alive
@@ -310,14 +314,14 @@ Connection: keep-alive
 </html>
 ```
 
-#### 4.3.3 设置 Ingress Controller 证书上下文
+#### 4.4.3 设置 Ingress Controller 证书上下文
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"osm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
 ```
 
-#### 4.3.4 设置 Ingress 策略
+#### 4.4.4 设置 Ingress 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -348,7 +352,7 @@ spec:
 EOF
 ```
 
-#### 4.3.5 设置 IngressBackend 策略
+#### 4.4.5 设置 IngressBackend 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -374,7 +378,7 @@ spec:
 EOF
 ```
 
-#### 4.3.6 测试指令
+#### 4.4.6 测试指令
 
 流量路径: 
 
@@ -384,39 +388,39 @@ Client --**http**--> Nginx Ingress --**mtls** --> sidecar --> Middle
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/hello
 ```
 
-#### 4.3.7 测试结果
+#### 4.4.7 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
-Date: Sat, 08 Oct 2022 15:14:02 GMT
+Date: Sun, 09 Oct 2022 08:39:02 GMT
 Content-Type: text/plain; charset=utf-8
 Content-Length: 13
 Connection: keep-alive
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-6c5bf6f9b6-m2hcg
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 
 hello world.
 ```
 
-#### 4.3.8 禁用Egress目的宽松模式
+#### 4.4.8 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.3.9 启用Egress目的策略模式
+#### 4.4.9 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-#### 4.3.10 创建Egress mTLS Secret
+#### 4.4.10 创建Egress mTLS Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
@@ -429,7 +433,7 @@ kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=tls.key=./middle.key 
 ```
 
-#### 4.3.11 设置Egress目的策略
+#### 4.4.11 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -457,7 +461,7 @@ spec:
 EOF
 ```
 
-#### 4.3.12 测试指令
+#### 4.4.12 测试指令
 
 流量路径: 
 
@@ -467,22 +471,22 @@ Client --**http**--> Nginx Ingress --**mtls**--> sidecar --> Middle --> sidecar 
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/time
 ```
 
-#### 4.3.13 测试结果
+#### 4.4.13 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
-Date: Sat, 08 Oct 2022 15:16:34 GMT
+Date: Sun, 09 Oct 2022 08:39:42 GMT
 Content-Type: text/plain; charset=utf-8
-Content-Length: 76
+Content-Length: 75
 Connection: keep-alive
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-6c5bf6f9b6-m2hcg
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 
-The current time: 2022-10-08 15:16:34.382595496 +0000 UTC m=+3336.451711119
+The current time: 2022-10-09 08:39:42.336230168 +0000 UTC m=+206.716581170
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -497,9 +501,9 @@ kubectl delete egress -n egress-middle server-8443
 kubectl delete secrets -n osm-system egress-middle-cert
 ```
 
-### 4.4 场景测试三：TLS Nginx & mTLS Ingress & mTLS Egress
+### 4.5 场景测试三：TLS Nginx & mTLS Ingress & mTLS Egress
 
-#### 4.4.1 测试指令
+#### 4.5.1 测试指令
 
 流量路径: 
 
@@ -509,13 +513,13 @@ Client --**http**--> Nginx Ingress Controller
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/hello
 ```
 
-#### 4.4.2 测试结果
+#### 4.5.2 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 404 Not Found
-Date: Sat, 08 Oct 2022 15:22:58 GMT
+Date: Sun, 09 Oct 2022 08:40:00 GMT
 Content-Type: text/html
 Content-Length: 146
 Connection: keep-alive
@@ -529,14 +533,14 @@ Connection: keep-alive
 </html>
 ```
 
-#### 4.4.3 设置 Ingress Controller 证书上下文
+#### 4.5.3 设置 Ingress Controller 证书上下文
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"osm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
 ```
 
-#### 4.4.4 创建 Nginx TLS Secret
+#### 4.5.4 创建 Nginx TLS Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/nginx.crt -o nginx.crt
@@ -547,7 +551,7 @@ kubectl create secret tls -n egress-middle nginx-cert-secret \
   --key=./nginx.key 
 ```
 
-#### 4.4.5 设置 Ingress 策略
+#### 4.5.5 设置 Ingress 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -582,7 +586,7 @@ spec:
 EOF
 ```
 
-#### 4.4.6 设置 IngressBackend 策略
+#### 4.5.6 设置 IngressBackend 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -608,7 +612,7 @@ spec:
 EOF
 ```
 
-#### 4.4.7 测试指令
+#### 4.5.7 测试指令
 
 流量路径: 
 
@@ -618,39 +622,39 @@ Client --**tls**--> Nginx Ingress --**mtls** --> sidecar --> Middle
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://ingress-nginx-controller.ingress-nginx/hello --key /certs/client.key --cert /certs/client.crt
 ```
 
-#### 4.4.8 测试结果
+#### 4.5.8 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/2 200 
-date: Sat, 08 Oct 2022 15:46:12 GMT
+date: Sun, 09 Oct 2022 08:40:40 GMT
 content-type: text/plain; charset=utf-8
 content-length: 13
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-6c5bf6f9b6-m2hcg
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
 hello world.
 ```
 
-#### 4.4.9 禁用Egress目的宽松模式
+#### 4.5.9 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.4.10 启用Egress目的策略模式
+#### 4.5.10 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-#### 4.4.11 创建Egress mTLS Secret
+#### 4.5.11 创建Egress mTLS Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
@@ -663,7 +667,7 @@ kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=tls.key=./middle.key 
 ```
 
-#### 4.4.12 设置Egress目的策略
+#### 4.5.12 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -691,7 +695,7 @@ spec:
 EOF
 ```
 
-#### 4.4.13 测试指令
+#### 4.5.13 测试指令
 
 流量路径: 
 
@@ -701,23 +705,22 @@ Client --**tls**--> Nginx Ingress --**mtls**--> sidecar --> Middle --> sidecar -
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://ingress-nginx-controller.ingress-nginx/time --key /certs/client.key --cert /certs/client.crt
 ```
 
-#### 4.4.14 测试结果
+#### 4.5.14 测试结果
 
 正确返回结果类似于:
 
 ```bash
-certs/client.key --cert /certs/client.crt
 HTTP/2 200 
-date: Sat, 08 Oct 2022 15:47:46 GMT
+date: Sun, 09 Oct 2022 08:41:21 GMT
 content-type: text/plain; charset=utf-8
-content-length: 76
+content-length: 75
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-6c5bf6f9b6-m2hcg
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
-The current time: 2022-10-08 15:47:46.057295899 +0000 UTC m=+5209.495978755
+The current time: 2022-10-09 08:41:21.121578846 +0000 UTC m=+305.588353001
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -733,9 +736,9 @@ kubectl delete secrets -n osm-system egress-middle-cert
 kubectl delete secrets -n egress-middle nginx-cert-secret
 ```
 
-### 4.5 场景测试四：mTLS Nginx & mTLS Ingress & mTLS Egress
+### 4.6 场景测试四：mTLS Nginx & mTLS Ingress & mTLS Egress
 
-#### 4.5.1 测试指令
+#### 4.6.1 测试指令
 
 流量路径: 
 
@@ -745,13 +748,13 @@ Client --**http**--> Nginx Ingress Controller
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://ingress-nginx-controller.ingress-nginx/hello
 ```
 
-#### 4.5.2 测试结果
+#### 4.6.2 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/1.1 404 Not Found
-Date: Sat, 08 Oct 2022 15:58:00 GMT
+Date: Sun, 09 Oct 2022 08:41:52 GMT
 Content-Type: text/html
 Content-Length: 146
 Connection: keep-alive
@@ -765,14 +768,14 @@ Connection: keep-alive
 </html>
 ```
 
-#### 4.5.3 设置 Ingress Controller 证书上下文
+#### 4.6.3 设置 Ingress Controller 证书上下文
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"osm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
 ```
 
-#### 4.5.4 创建 Nginx CA Secret
+#### 4.6.4 创建 Nginx CA Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
@@ -781,7 +784,7 @@ kubectl create secret generic -n egress-middle nginx-ca-secret \
   --from-file=ca.crt=./ca.crt 
 ```
 
-#### 4.5.5 创建 Nginx TLS Secret
+#### 4.6.5 创建 Nginx TLS Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/nginx.crt -o nginx.crt
@@ -792,7 +795,7 @@ kubectl create secret tls -n egress-middle nginx-cert-secret \
   --key=./nginx.key 
 ```
 
-#### 4.5.6 设置 Ingress 策略
+#### 4.6.6 设置 Ingress 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -831,7 +834,7 @@ spec:
 EOF
 ```
 
-#### 4.5.7 设置 IngressBackend 策略
+#### 4.6.7 设置 IngressBackend 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -857,7 +860,7 @@ spec:
 EOF
 ```
 
-#### 4.5.8 测试指令
+#### 4.6.8 测试指令
 
 流量路径: 
 
@@ -867,39 +870,39 @@ Client --**mtls**--> Nginx Ingress --**mtls** --> sidecar --> Middle
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://ingress-nginx-controller.ingress-nginx/hello  --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
 ```
 
-#### 4.5.9 测试结果
+#### 4.6.9 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/2 200 
-date: Sat, 08 Oct 2022 16:01:28 GMT
+date: Sun, 09 Oct 2022 08:42:37 GMT
 content-type: text/plain; charset=utf-8
 content-length: 13
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-6c5bf6f9b6-m2hcg
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
 hello world.
 ```
 
-#### 4.5.10 禁用Egress目的宽松模式
+#### 4.6.10 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.5.11 启用Egress目的策略模式
+#### 4.6.11 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-#### 4.5.12 创建Egress mTLS Secret
+#### 4.6.12 创建Egress mTLS Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
@@ -912,7 +915,7 @@ kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=tls.key=./middle.key 
 ```
 
-#### 4.5.13 设置Egress目的策略
+#### 4.6.13 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -940,7 +943,7 @@ spec:
 EOF
 ```
 
-#### 4.5.14 测试指令
+#### 4.6.14 测试指令
 
 流量路径: 
 
@@ -950,22 +953,22 @@ Client --**mtls**--> Nginx Ingress --**mtls**--> sidecar --> Middle --> sidecar 
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://ingress-nginx-controller.ingress-nginx/time --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
 ```
 
-#### 4.5.15 测试结果
+#### 4.6.15 测试结果
 
 正确返回结果类似于:
 
 ```bash
 HTTP/2 200 
-date: Sat, 08 Oct 2022 16:02:56 GMT
+date: Sun, 09 Oct 2022 08:43:13 GMT
 content-type: text/plain; charset=utf-8
-content-length: 76
+content-length: 75
 osm-stats-namespace: egress-middle
 osm-stats-kind: Deployment
 osm-stats-name: middle
-osm-stats-pod: middle-6c5bf6f9b6-m2hcg
+osm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
-The current time: 2022-10-08 16:02:56.636227534 +0000 UTC m=+6120.696021528
+The current time: 2022-10-09 08:43:13.241006879 +0000 UTC m=+417.741653620
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
