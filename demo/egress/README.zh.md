@@ -397,12 +397,15 @@ kubectl exec ${curl_client} -n egress-client -c client -- curl -ksi http://serve
 正确返回结果类似于:
 
 ```bash
-HTTP/2 200 
+HTTP/1.1 200 OK
+date: Sun, 09 Oct 2022 07:48:15 GMT
 content-type: text/plain; charset=utf-8
-content-length: 75
-date: Sun, 09 Oct 2022 00:24:03 GMT
+server: pipy
+x-pipy-upstream-service-time: 32
+content-length: 74
+connection: keep-alive
 
-The current time: 2022-10-09 00:24:03.830082283 +0000 UTC m=+2154.622989759
+The current time: 2022-10-09 07:48:15.069213069 +0000 UTC m=+269.209148917
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -595,5 +598,3 @@ The current time: 2022-10-09 00:48:33.580642547 +0000 UTC m=+3625.463281090
 kubectl delete egress -n egress-client server-8443
 kubectl delete secrets -n osm-system egress-client-cert
 ```
-
-### 
