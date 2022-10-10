@@ -1,37 +1,37 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: secret-curl
+  name: curl
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: secret-curl
+  name: curl
   labels:
-    app: secret-curl
-    service: secret-curl
+    app: curl
+    service: curl
 spec:
   ports:
     - name: http
       port: 80
   selector:
-    app: secret-curl
+    app: curl
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: secret-curl
+  name: curl
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: secret-curl
+      app: curl
   template:
     metadata:
       labels:
-        app: secret-curl
+        app: curl
     spec:
-      serviceAccountName: secret-curl
+      serviceAccountName: curl
       nodeSelector:
         kubernetes.io/os: linux
       containers:
