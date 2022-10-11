@@ -43,7 +43,10 @@ osm install \
 - Access Control，支持两种访问源类型：
   - Service
   - IPRange
-
+- 支持的传输类型
+  - 明文传输
+  - 加密传输
+    - mTLS
 ### 3.2 部署业务 POD
 
 ```bash
