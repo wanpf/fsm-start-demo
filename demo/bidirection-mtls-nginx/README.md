@@ -452,11 +452,11 @@ spec:
     mtls:
       issuer: other
       cert:
-      sn: 1
-      expiration: 2030-1-1 00:00:00
-      secret:
-        name: egress-middle-cert
-        namespace: osm-system
+        sn: 1
+        expiration: 2030-1-1 00:00:00
+        secret:
+          name: egress-middle-cert
+          namespace: osm-system
   hosts:
   - server.egress-server.svc.cluster.local
   ports:
