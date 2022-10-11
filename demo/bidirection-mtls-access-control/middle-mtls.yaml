@@ -41,11 +41,3 @@ spec:
         command: ["/middle"]
         ports:
         - containerPort: 8080
-        volumeMounts:
-          - name: client-mtls-secret
-            mountPath: "/certs"
-            readOnly: true
-      volumes:
-        - name: client-mtls-secret
-          secret:
-            secretName: bidi-mtls-client
