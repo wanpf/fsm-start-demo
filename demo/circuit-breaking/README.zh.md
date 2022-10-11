@@ -22,7 +22,7 @@ osm install \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.1 \
+    --set=osm.image.tag=1.2.1-alpha.2 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
