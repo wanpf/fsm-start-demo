@@ -48,4 +48,4 @@ spec:
       volumes:
         - name: client-mtls-secret
           secret:
-            secretName: bidi-mtls-client
+            secretName: client-mtls-secret
