@@ -372,11 +372,13 @@ spec:
     name: client
     namespace: egress-client
     mtls:
-      sn: 1
-      expiration: 2030-1-1 00:00:00
-      secret:
-        name: egress-client-cert
-        namespace: osm-system
+      issuer: other
+      cert:
+        sn: 1
+        expiration: 2030-1-1 00:00:00
+        secret:
+          name: egress-client-cert
+          namespace: osm-system
   hosts:
   - server.egress-server.svc.cluster.local
   ports:
@@ -558,11 +560,13 @@ spec:
     name: client
     namespace: egress-client
     mtls:
-      sn: 1
-      expiration: 2030-1-1 00:00:00
-      secret:
-        name: egress-client-cert
-        namespace: osm-system
+      issuer: other
+      cert:
+        sn: 1
+        expiration: 2030-1-1 00:00:00
+        secret:
+          name: egress-client-cert
+          namespace: osm-system
   ipAddresses:
   - ${server_pod_ip}/32
   ports:
