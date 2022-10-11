@@ -7,7 +7,7 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.1-alpha.1
+release=v1.2.1-alpha.2
 curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
@@ -24,9 +24,8 @@ osm install \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.1 \
+    --set=osm.image.tag=1.2.1-alpha.2 \
     --set=osm.image.pullPolicy=Always \
-    --set=osm.enableEgress=false \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
     --timeout=900s
@@ -62,7 +61,7 @@ kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```
 
-### 3.3 场景测试一：基于服务的访问控制
+### 3.3 场景测试一：基于服务的访问控制，明文传输
 
 #### 3.3.1 启用访问控制策略
 
@@ -122,12 +121,12 @@ connection: keep-alive
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-kubeexport osm_namespace=osm-system
+export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
 kubectl delete accesscontrol -n httpbin httpbin
 ```
 
-### 3.4 场景测试二：基于IP范围的访问控制
+### 3.4 场景测试二：基于IP范围的访问控制，明文传输
 
 #### 3.4.1 启用访问控制策略
 
@@ -140,6 +139,7 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 
 ```bash
 export osm_namespace=osm-system
+curl_pod_ip="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: AccessControl
 apiVersion: policy.openservicemesh.io/v1alpha1
@@ -154,7 +154,7 @@ spec:
       protocol: http
   sources:
   - kind: IPRange
-    name: 10.244.1.4/32
+    name: ${curl_pod_ip}/32
 EOF
 ```
 
@@ -186,8 +186,206 @@ connection: keep-alive
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-kubeexport osm_namespace=osm-system
+export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
 kubectl delete accesscontrol -n httpbin httpbin
+```
+
+### 3.5 场景测试三：基于服务的访问控制，mTLS传输
+
+#### 3.5.1 启用访问控制策略
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
+```
+
+#### 3.5.2 为客户端创建证书 Secret
+
+```bash
+kubectl apply -f - <<EOF
+kind: AccessCert
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: curl-mtls-cert
+  namespace: httpbin
+spec:
+  subjectAltNames:
+  - curl.curl.cluster.local
+  secret:
+    name: curl-mtls-secret
+    namespace: curl
+EOF
+```
+
+#### 3.5.3 客户端挂在证书 Secret
+
+```bash
+#模拟外部客户端
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/curl-mtls.yaml
+
+#等待依赖的 POD 正常启动
+```
+
+#### 3.5.4 设置基于服务的访问控制策略
+
+```bash
+export osm_namespace=osm-system
+kubectl apply -f - <<EOF
+kind: AccessControl
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: httpbin
+  namespace: httpbin
+spec:
+  backends:
+  - name: httpbin
+    port:
+      number: 14001 # targetPort of httpbin service
+      protocol: http
+    tls:
+      skipClientCertValidation: false
+  sources:
+  - kind: Service
+    namespace: curl
+    name: curl
+  - kind: AuthenticatedPrincipal
+    name: curl.curl.cluster.local
+EOF
+```
+
+#### 3.5.5 测试指令
+
+```bash
+kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -- curl -ksI https://httpbin.httpbin:14001/get --cacert /certs/ca.crt --key /certs/tls.key --cert /certs/tls.crt
+```
+
+#### 3.5.6 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/2 200 
+server: gunicorn
+date: Tue, 11 Oct 2022 01:36:00 GMT
+content-type: application/json
+content-length: 267
+access-control-allow-origin: *
+access-control-allow-credentials: true
+osm-stats-namespace: httpbin
+osm-stats-kind: Deployment
+osm-stats-name: httpbin
+osm-stats-pod: httpbin-77dcf49495-tshft
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+export osm_namespace=osm-system
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/curl.yaml
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
+kubectl delete accesscontrol -n httpbin httpbin
+kubectl delete accesscerts -n httpbin curl-mtls-cert
+```
+
+### 3.6 场景测试四：基于IP范围的访问控制，mTLS传输
+
+#### 3.6.1 启用访问控制策略
+
+```bash
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
+```
+
+#### 3.6.2 为客户端创建证书 Secret
+
+```bash
+kubectl apply -f - <<EOF
+kind: AccessCert
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: curl-mtls-cert
+  namespace: httpbin
+spec:
+  subjectAltNames:
+  - curl.curl.cluster.local
+  secret:
+    name: curl-mtls-secret
+    namespace: curl
+EOF
+```
+
+#### 3.6.3 客户端挂在证书 Secret
+
+```bash
+#模拟外部客户端
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/curl-mtls.yaml
+
+#等待依赖的 POD 正常启动
+```
+
+#### 3.6.4 设置基于IP范围的访问控制策略
+
+```bash
+export osm_namespace=osm-system
+curl_pod_ip="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].status.podIP}')"
+kubectl apply -f - <<EOF
+kind: AccessControl
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: httpbin
+  namespace: httpbin
+spec:
+  backends:
+  - name: httpbin
+    port:
+      number: 14001 # targetPort of httpbin service
+      protocol: http
+    tls:
+      skipClientCertValidation: false
+  sources:
+  - kind: IPRange
+    name: ${curl_pod_ip}/32
+  - kind: AuthenticatedPrincipal
+    name: curl.curl.cluster.local
+EOF
+```
+
+#### 3.6.5 测试指令
+
+```bash
+kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -- curl -ksI https://httpbin.httpbin:14001/get --cacert /certs/ca.crt --key /certs/tls.key --cert /certs/tls.crt
+```
+
+#### 3.6.6 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/2 200 
+server: gunicorn
+date: Tue, 11 Oct 2022 01:42:01 GMT
+content-type: application/json
+content-length: 267
+access-control-allow-origin: *
+access-control-allow-credentials: true
+osm-stats-namespace: httpbin
+osm-stats-kind: Deployment
+osm-stats-name: httpbin
+osm-stats-pod: httpbin-77dcf49495-tshft
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+export osm_namespace=osm-system
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/curl.yaml
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
+kubectl delete accesscontrol -n httpbin httpbin
+kubectl delete accesscerts -n httpbin curl-mtls-cert
 ```
 

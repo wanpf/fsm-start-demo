@@ -68,7 +68,7 @@ kubectl wait --for=condition=ready pod -n egress-server -l app=server --timeout=
 kubectl wait --for=condition=ready pod -n egress-client -l app=client --timeout=180s
 ```
 
-### 3.3 场景测试一：基于域名的外部访问，明文通讯
+### 3.3 场景测试一：基于域名的外部访问，明文传输
 
 #### 3.3.1 禁用Egress目的宽松模式
 
@@ -150,7 +150,7 @@ connection: keep-alive
 kubectl delete egress -n egress-client httpbin-14001
 ```
 
-### 3.4 场景测试二：基于 IP 范围的外部访问，明文通讯
+### 3.4 场景测试二：基于 IP 范围的外部访问，明文传输
 
 #### 3.4.1 禁用Egress目的宽松模式
 
