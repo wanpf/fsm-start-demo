@@ -7,7 +7,7 @@
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
 release=v1.2.1-alpha.2
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
