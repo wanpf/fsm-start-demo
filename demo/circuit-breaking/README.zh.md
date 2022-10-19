@@ -5,8 +5,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.1-alpha.2
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.2.0
+curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -21,8 +21,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.2 \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.2.0 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=warn \
     --set=osm.controllerLogLevel=warn \
@@ -65,10 +65,10 @@ kubectl create namespace circuit-breaking
 osm namespace add circuit-breaking
 
 #模拟业务服务
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio.yaml -n circuit-breaking
+kubectl apply -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio.yaml -n circuit-breaking
 
 #模拟客户端
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio-client.yaml -n circuit-breaking
+kubectl apply -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/circuit-breaking/fortio-client.yaml -n circuit-breaking
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n circuit-breaking -l app=fortio --timeout=180s

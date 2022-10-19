@@ -8,7 +8,7 @@
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
 release=v1.2.0
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -23,8 +23,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.2 \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.2.0 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enablePermissiveTrafficPolicy=true \
     --set=osm.sidecarLogLevel=error \
@@ -44,8 +44,8 @@ osm install \
 #模拟业务服务
 kubectl create namespace ebpf-test
 osm namespace add ebpf-test
-kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/merbridge/sleep.yaml
-kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/merbridge/helloworld.yaml
+kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/merbridge/sleep.yaml
+kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/merbridge/helloworld.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n ebpf-test -l app=sleep --timeout=180s
@@ -180,7 +180,7 @@ spec:
     spec:
       hostNetwork: true
       containers:
-      - image: "cybwan/osm-edge-merbridge:latest"
+      - image: "flomesh-io/osm-edge-merbridge:latest"
         imagePullPolicy: Always
         name: merbridge
         args:
@@ -307,7 +307,7 @@ spec:
     spec:
       hostNetwork: true
       containers:
-      - image: "cybwan/osm-edge-merbridge:latest"
+      - image: "flomesh-io/osm-edge-merbridge:latest"
         imagePullPolicy: Always
         name: merbridge
         args:

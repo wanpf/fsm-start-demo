@@ -7,8 +7,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.1-alpha.2
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.2.0
+curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -23,8 +23,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.2 \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.2.0 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enableEgress=false \
     --set=osm.sidecarLogLevel=debug \
@@ -71,10 +71,10 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traff
 #Simulate business service
 kubectl create namespace ratelimit
 osm namespace add ratelimit
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/rate-limit/fortio.yaml -n ratelimit
+kubectl apply -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/rate-limit/fortio.yaml -n ratelimit
 
 #Simulate client
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/rate-limit/fortio-client.yaml -n ratelimit
+kubectl apply -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/rate-limit/fortio-client.yaml -n ratelimit
 
 #Wait for POD to start properly
 kubectl wait --for=condition=ready pod -n ratelimit -l app=fortio --timeout=180s

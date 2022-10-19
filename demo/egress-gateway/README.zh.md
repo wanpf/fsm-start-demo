@@ -5,8 +5,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.1-alpha.2
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.2.0
+curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -21,8 +21,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.2 \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.2.0 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enableEgress=false \
     --set=osm.sidecarLogLevel=error \
@@ -58,7 +58,7 @@ osm install \
 ```bash
 kubectl create namespace curl
 osm namespace add curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress-gateway/curl.yaml
+kubectl apply -n curl -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/egress-gateway/curl.yaml
 ```
 
 #### 3.2.2 部署全局出口代理网关
@@ -66,10 +66,10 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-
 ```bash
 #忽略可能的重复创建 namespace 错误
 kubectl create namespace egress-gateway
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-rbac.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-service.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-configmap.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-deployment.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-rbac.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-service.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-configmap.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/egress-gateway/global-egress-gateway-deployment.yaml
 ```
 
 #### 3.2.3 等待依赖的 POD 正常启动

@@ -7,8 +7,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.1-alpha.2
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.2.0
+curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -23,8 +23,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.2.1-alpha.2 \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.2.0 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -69,11 +69,11 @@ osm install \
 #模拟业务服务
 kubectl create namespace httpbin
 osm namespace add httpbin
-kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/httpbin.yaml
+kubectl apply -n httpbin -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/access-control/httpbin.yaml
 
 #模拟外部客户端
 kubectl create namespace curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/access-control/curl.yaml
+kubectl apply -n curl -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/access-control/curl.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
