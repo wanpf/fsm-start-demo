@@ -60,23 +60,23 @@ kubectl wait --namespace ingress-nginx \
 
 ### 4.1 Technical Concepts
 
-<img src="https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/Bidirectional_mTLS.png" alt="Bidirectional_mTLS" style="zoom:80%;" />
+<img src="https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/Bidirectional_mTLS.png" alt="Bidirectional_mTLS" style="zoom:80%;" />
 
 ### 4.2 Deploy application POD
 
 ```bash
 #Sample server service
 kubectl create namespace egress-server
-kubectl apply -n egress-server -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/server.yaml
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/server.yaml
 
 #Sample middle-ware service
 kubectl create namespace egress-middle
 osm namespace add egress-middle
-kubectl apply -n egress-middle -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/middle.yaml
+kubectl apply -n egress-middle -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/middle.yaml
 
 #Sample client
 kubectl create namespace egress-client
-kubectl apply -n egress-client -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/client.yaml
+kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/client.yaml
 
 #Wait for POD to start properly
 kubectl wait --for=condition=ready pod -n egress-server -l app=server --timeout=180s
@@ -207,9 +207,9 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 #### 4.3.9 Create Egress mTLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/ca.crt -o ca.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.crt -o middle.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.key -o middle.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
 kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \
@@ -425,9 +425,9 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 #### 4.4.10 Create Egress mTLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/ca.crt -o ca.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.crt -o middle.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.key -o middle.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
 kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \
@@ -547,8 +547,8 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certi
 #### 4.5.4 Create Nginx TLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/nginx.crt -o nginx.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/nginx.key -o nginx.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/nginx.crt -o nginx.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/nginx.key -o nginx.key
 
 kubectl create secret tls -n egress-middle nginx-cert-secret \
   --cert=./nginx.crt \
@@ -661,9 +661,9 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 #### 4.5.11 Create Egress mTLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/ca.crt -o ca.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.crt -o middle.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.key -o middle.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
 kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \
@@ -784,7 +784,7 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certi
 #### 4.6.4 Create Nginx CA Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
 
 kubectl create secret generic -n egress-middle nginx-ca-secret \
   --from-file=ca.crt=./ca.crt 
@@ -793,8 +793,8 @@ kubectl create secret generic -n egress-middle nginx-ca-secret \
 #### 4.6.5 Create Nginx TLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/nginx.crt -o nginx.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/nginx.key -o nginx.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/nginx.crt -o nginx.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/nginx.key -o nginx.key
 
 kubectl create secret tls -n egress-middle nginx-cert-secret \
   --cert=./nginx.crt \
@@ -911,9 +911,9 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 #### 4.6.12 Create Egress mTLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/ca.crt -o ca.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.crt -o middle.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/middle.key -o middle.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
 kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \

@@ -44,8 +44,8 @@ osm install \
 #模拟业务服务
 kubectl create namespace ebpf-test
 osm namespace add ebpf-test
-kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/merbridge/sleep.yaml
-kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/merbridge/helloworld.yaml
+kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/merbridge/sleep.yaml
+kubectl apply -n ebpf-test -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/merbridge/helloworld.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n ebpf-test -l app=sleep --timeout=180s

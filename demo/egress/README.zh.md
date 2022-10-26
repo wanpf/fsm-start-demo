@@ -56,13 +56,13 @@ osm install \
 ```bash
 #模拟外部服务
 kubectl create namespace egress-server
-kubectl apply -n egress-server -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/egress/httpbin.yaml
-kubectl apply -n egress-server -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/server.yaml
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/egress/httpbin.yaml
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/server.yaml
 
 #模拟业务服务
 kubectl create namespace egress-client
 osm namespace add egress-client
-kubectl apply -n egress-client -f https://raw.githubusercontent.com/flomesh-io/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/client.yaml
+kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main/demo/bidirection-mtls-nginx/client.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n egress-server -l app=httpbin --timeout=180s
@@ -349,9 +349,9 @@ command terminated with exit code 52
 #### 3.6.5 创建Egress mTLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/ca.crt -o ca.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/client.crt -o client.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/client.key -o client.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.crt -o client.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.key -o client.key
 
 kubectl create secret generic -n osm-system egress-client-cert \
   --from-file=ca.crt=./ca.crt \
@@ -536,9 +536,9 @@ command terminated with exit code 52
 #### 3.8.5 创建Egress mTLS Secret
 
 ```bash
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/ca.crt -o ca.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/client.crt -o client.crt
-curl https://raw.githubusercontent.com/flomesh-io/mtls-time-demo/main/certs/client.key -o client.key
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.crt -o client.crt
+curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/client.key -o client.key
 
 kubectl create secret generic -n osm-system egress-client-cert \
   --from-file=ca.crt=./ca.crt \
