@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udp-echo-v2
+  namespace: udp-demo
+  labels:
+    app: udp-echo
+    version: v2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: udp-echo
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: udp-echo
+        version: v2
+    spec:
+      serviceAccountName: udp-echo
+      containers:
+        - name: udp-echo-server
+          image: "cybwan/osm-edge-demo-udp-echo-server:latest"
+          imagePullPolicy: Always
+          command: ["/udp-echo-server"]
+          args: [ "--port", "6000" ]
+          ports:
+            - containerPort: 6000
+              name: udp-echo-server
+              protocol: UDP
