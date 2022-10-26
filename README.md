@@ -1,1 +1,1 @@
-# osm-edge-start-demo
+# osm-edge-v1.2-demo
