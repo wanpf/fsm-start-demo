@@ -21,8 +21,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.3.0-alpha.1 \
+    --set=osm.image.registry=localhost:5000/flomesh \
+    --set=osm.image.tag=latest \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -43,8 +43,15 @@ kubectl create namespace httpbin
 osm namespace add httpbin
 kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/local-dns-proxy/httpbin.yaml
 
+kubectl create namespace curl
+osm namespace add curl
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/local-dns-proxy/curl.yaml
+
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
+kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
+
+#osm verify connectivity --from-pod curl/curl-548c575854-4wbqn --to-pod httpbin/httpbin-77dcf49495-qlwr9 --to-service httpbin
 ```
 
 
