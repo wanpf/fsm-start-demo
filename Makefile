@@ -2,7 +2,7 @@
 
 CTR_REGISTRY ?= flomesh
 CTR_TAG      ?= latest
-CTR_REPO     ?= https://raw.githubusercontent.com/cybwan/osm-edge-v1.2-demo/main
+CTR_REPO     ?= https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main
 
 ARCH_MAP_x86_64 := amd64
 ARCH_MAP_arm64 := arm64
