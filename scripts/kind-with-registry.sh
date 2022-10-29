@@ -6,6 +6,8 @@ set -o pipefail
 
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-osm}"
+MAPPING_HOST_PORT="${MAPPING_HOST_PORT:-8090}"
+API_SERVER_PORT="${API_SERVER_PORT:-6445}"
 
 # shellcheck disable=SC2086
 if kind get clusters | grep -q ^$KIND_CLUSTER_NAME$ ; then
@@ -44,8 +46,15 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: ${MAPPING_HOST_PORT}
+    protocol: TCP
 - role: worker
 - role: worker
+networking:
+  apiServerAddress: "0.0.0.0"
+  apiServerPort: ${API_SERVER_PORT}
 containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
