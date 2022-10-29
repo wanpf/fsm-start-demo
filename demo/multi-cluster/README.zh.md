@@ -221,7 +221,11 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
+```
 
+## 6. 多集群卸载
+
+```
 kind delete cluster --name control-plane
 kind delete cluster --name cluster1
 kind delete cluster --name cluster2
