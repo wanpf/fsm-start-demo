@@ -99,7 +99,8 @@ EOF
 
 ```bash
 kubecm switch kind-cluster1
-cat <<EOF | kubectl apply -f -
+kubectl create namespace pipy
+cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -153,7 +154,7 @@ cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: default
+  namespace: pipy
   name: pipy-ok
 spec:
   rules:
@@ -167,11 +168,12 @@ EOF
 
 ```bash
 kubecm switch kind-cluster2
+kubectl create namespace pipy
 cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceImport
 metadata:
-  namespace: default
+  namespace: pipy
   name: pipy-ok
 spec:
   type: ClusterSetIP
@@ -210,17 +212,69 @@ osm install \
 ## 5. 多集群测试
 
 
-### 5.2 部署业务 POD
+### 5.2 部署模拟客户端
 
 ```bash
-kubecm switch kind-cluster2
 #模拟业务服务
+kubecm switch kind-cluster2
 kubectl create namespace curl
 osm namespace add curl
 kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/curl.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
+```
+
+### 5.3 部署模拟服务
+
+```bash
+kubecm switch kind-cluster2
+kubectl create namespace pipy
+osm namespace add pipy
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok
+  labels:
+    app: pipy-ok
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+    spec:
+      containers:
+        - name: pipy-ok
+          image: flomesh/pipy:0.50.0-146
+          ports:
+            - name: pipy
+              containerPort: 8080
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8080)
+              .serveHTTP(new Message('Hi, there!'))
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: pipy-ok
+EOF
 ```
 
 ## 6. 多集群卸载
