@@ -7,6 +7,7 @@ set -o pipefail
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-osm}"
 MAPPING_HOST_PORT="${MAPPING_HOST_PORT:-8090}"
+API_SERVER_ADDR="${API_SERVER_ADDR:-0.0.0.0}"
 API_SERVER_PORT="${API_SERVER_PORT:-6445}"
 
 # shellcheck disable=SC2086
@@ -53,7 +54,7 @@ nodes:
 - role: worker
 - role: worker
 networking:
-  apiServerAddress: "0.0.0.0"
+  apiServerAddress: "${API_SERVER_ADDR}"
   apiServerPort: ${API_SERVER_PORT}
 containerdConfigPatches:
 - |-
