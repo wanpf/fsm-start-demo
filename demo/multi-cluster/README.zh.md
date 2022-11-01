@@ -23,7 +23,7 @@ cp ./kubecm/kubecm /usr/local/bin/
 
 ## 3. 部署多集群环境
 
-### 3.1 部署多集群:control-plane + cluster1 + cluster2
+### 3.1 部署控制平面集群和两个业务集群
 
 ```bash
 curl -o kind-with-registry.sh https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/kind-with-registry.sh
@@ -134,7 +134,7 @@ spec:
             - |
               pipy()
               .listen(8080)
-              .serveHTTP(new Message('Hi, there!'))
+              .serveHTTP(new Message('Hi, I am from Cluster1 !'))
 ---
 apiVersion: v1
 kind: Service
@@ -183,6 +183,7 @@ kubecm switch kind-cluster2
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
 
 curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
+
 curl -si http://$API_SERVER_ADDR:8091/ok
 ```
 
@@ -223,7 +224,27 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```
 
-### 5.2 部署模拟服务
+### 5.2 场景测试一：导入集群不存在同质服务
+
+#### 5.2.1 测试指令
+
+```bash
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+#kubectl logs "${curl_client}" -n curl -c sidecar
+```
+
+#### 5.2.2 测试结果
+
+正确返回结果类似于:
+
+```bash
+待补充...
+```
+
+### 5.3 场景测试二：导入集群存在同质无 SA 服务
+
+#### 5.3.1 部署无SA业务服务
 
 ```bash
 kubecm switch kind-cluster2
@@ -257,7 +278,7 @@ spec:
             - |
               pipy()
               .listen(8080)
-              .serveHTTP(new Message('Hi, there!'))
+              .serveHTTP(new Message('Hi, I am from Cluster2 !'))
 ---
 apiVersion: v1
 kind: Service
@@ -274,20 +295,110 @@ spec:
 EOF
 ```
 
-### 5.3 测试指令
+#### 5.3.2 测试指令
 
 ```bash
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-#kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
 #kubectl logs "${curl_client}" -n curl -c sidecar
 ```
 
-### 5.4 测试结果
+#### 5.3.3 测试结果
 
 正确返回结果类似于:
 
 ```bash
 待补充...
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete deployments -n pipy pipy-ok
+kubectl delete service -n pipy pipy-ok
+```
+
+### 5.4 场景测试三：导入集群存在同质有 SA 服务
+
+#### 5.4.1 部署有SA业务服务
+
+```bash
+kubecm switch kind-cluster2
+osm namespace add pipy
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok
+  labels:
+    app: pipy-ok
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+    spec:
+      serviceAccountName: pipy
+      containers:
+        - name: pipy-ok
+          image: flomesh/pipy:0.50.0-146
+          ports:
+            - name: pipy
+              containerPort: 8080
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8080)
+              .serveHTTP(new Message('Hi, I am from Cluster2 !'))
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: pipy-ok
+EOF
+```
+
+#### 5.4.2 测试指令
+
+```bash
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+#kubectl logs "${curl_client}" -n curl -c sidecar
+```
+
+#### 5.4.3 测试结果
+
+正确返回结果类似于:
+
+```bash
+待补充...
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete deployments -n pipy pipy-ok
+kubectl delete service -n pipy pipy-ok
+kubectl delete serviceaccount -n pipy pipy
 ```
 
 ## 6. 多集群卸载
