@@ -29,6 +29,9 @@ cp ./kubecm/kubecm /usr/local/bin/
 wget https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/kind-with-registry.sh
 chmod u+x kind-with-registry.sh
 
+MY_HOST_IP=192.168.127.91
+export API_SERVER_ADDR=${MY_HOST_IP}
+
 KIND_CLUSTER_NAME=control-plane MAPPING_HOST_PORT=8090 API_SERVER_PORT=6445 ./kind-with-registry.sh
 KIND_CLUSTER_NAME=cluster1 MAPPING_HOST_PORT=8091 API_SERVER_PORT=6446 ./kind-with-registry.sh
 KIND_CLUSTER_NAME=cluster2 MAPPING_HOST_PORT=8092 API_SERVER_PORT=6447 ./kind-with-registry.sh
@@ -73,7 +76,7 @@ kind: Cluster
 metadata:
   name: cluster1
 spec:
-  gateway: demo.flomesh.internal:8091
+  gateway: ${API_SERVER_ADDR}:8091
   kubeconfig: |+
 `kind get kubeconfig --name cluster1 | sed 's/^/    /g'`
 EOF
@@ -89,7 +92,7 @@ kind: Cluster
 metadata:
   name: cluster2
 spec:
-  gateway: demo.flomesh.internal:8092
+  gateway: ${API_SERVER_ADDR}:8092
   kubeconfig: |+
 `kind get kubeconfig --name cluster2 | sed 's/^/    /g'`
 EOF
@@ -146,7 +149,14 @@ spec:
 EOF
 ```
 
-### 3.9 集群 cluster1 导出模拟服务
+### 3.9 集群 cluster2创建相应的 namespace
+
+```
+kubecm switch kind-cluster2
+kubectl create namespace pipy
+```
+
+### 3.10 集群 cluster1 导出模拟服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -164,28 +174,14 @@ spec:
 EOF
 ```
 
-### 3.10 集群 cluster2 导入模拟服务
+### 3.11 集群 cluster2 导入模拟服务检查
 
 ```bash
 kubecm switch kind-cluster2
-kubectl create namespace pipy
-cat <<EOF | kubectl apply -f -
-apiVersion: flomesh.io/v1alpha1
-kind: ServiceImport
-metadata:
-  namespace: pipy
-  name: pipy-ok
-spec:
-  type: ClusterSetIP
-  ports:
-    - name: pipy
-      port: 8080
-      protocol: TCP
-      endpoints:
-        - clusterKey: default/default/default/cluster1
-          targets:
-            - demo.flomesh.internal:8091/ok
-EOF
+kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
+
+curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
+curl -si http://$API_SERVER_ADDR:8091/ok
 ```
 
 ## 4. 安装 osm-edge
@@ -212,7 +208,7 @@ osm install \
 ## 5. 多集群测试
 
 
-### 5.2 部署模拟客户端
+### 5.1 部署模拟客户端
 
 ```bash
 #模拟业务服务
@@ -225,11 +221,10 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```
 
-### 5.3 部署模拟服务
+### 5.2 部署模拟服务
 
 ```bash
 kubecm switch kind-cluster2
-kubectl create namespace pipy
 osm namespace add pipy
 cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: apps/v1
@@ -275,6 +270,22 @@ spec:
   selector:
     app: pipy-ok
 EOF
+```
+
+### 5.3 测试指令
+
+```bash
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+#kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+#kubectl logs "${curl_client}" -n curl -c sidecar
+```
+
+### 5.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+待补充...
 ```
 
 ## 6. 多集群卸载
