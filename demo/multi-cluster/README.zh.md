@@ -26,7 +26,7 @@ cp ./kubecm/kubecm /usr/local/bin/
 ### 3.1 部署多集群:control-plane + cluster1 + cluster2
 
 ```bash
-wget https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/kind-with-registry.sh
+curl -o kind-with-registry.sh https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/kind-with-registry.sh
 chmod u+x kind-with-registry.sh
 
 MY_HOST_IP=192.168.127.91
