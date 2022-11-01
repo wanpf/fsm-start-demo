@@ -53,7 +53,7 @@ nodes:
 - role: worker
 - role: worker
 networking:
-  apiServerAddress: "${API_SERVER_ADDR}"
+  apiServerAddress: "0.0.0.0"
   apiServerPort: ${API_SERVER_PORT}
 containerdConfigPatches:
 - |-
