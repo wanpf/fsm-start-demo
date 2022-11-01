@@ -76,7 +76,8 @@ kind: Cluster
 metadata:
   name: cluster1
 spec:
-  gateway: ${API_SERVER_ADDR}:8091
+  gatewayHost: ${API_SERVER_ADDR}
+  gatewayPort: 8091
   kubeconfig: |+
 `kind get kubeconfig --name cluster1 | sed 's/^/    /g'`
 EOF
@@ -92,7 +93,8 @@ kind: Cluster
 metadata:
   name: cluster2
 spec:
-  gateway: ${API_SERVER_ADDR}:8092
+  gatewayHost: ${API_SERVER_ADDR}
+  gatewayPort: 8092
   kubeconfig: |+
 `kind get kubeconfig --name cluster2 | sed 's/^/    /g'`
 EOF
