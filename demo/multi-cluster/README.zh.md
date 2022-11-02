@@ -291,6 +291,9 @@ metadata:
   namespace: pipy
   name: pipy-ok
 spec:
+  pathRewrite:
+    from: ^/ok/?
+    to: /
   rules:
     - portNumber: 8080
       path: "/ok"
@@ -304,6 +307,9 @@ metadata:
   namespace: pipy-osm
   name: pipy-ok
 spec:
+  pathRewrite:
+    from: ^/ok-osm/?
+    to: /
   rules:
     - portNumber: 8080
       path: "/ok-osm"
@@ -330,7 +336,7 @@ kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
 curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
 
 curl -si http://$API_SERVER_ADDR:8091/ok
-curl -si http://$API_SERVER_ADDR:8091/ok-osm
+curl -si http://$API_SERVER_ADDR:8091/ok-osm/
 ```
 
 ### 5.2 场景测试一：导入集群不存在同质服务
