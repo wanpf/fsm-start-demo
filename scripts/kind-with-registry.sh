@@ -52,7 +52,6 @@ nodes:
     hostPort: ${MAPPING_HOST_PORT}
     protocol: TCP
 - role: worker
-- role: worker
 networking:
   apiServerAddress: ${API_SERVER_ADDR}
   apiServerPort: ${API_SERVER_PORT}
