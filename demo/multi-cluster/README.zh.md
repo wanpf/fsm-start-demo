@@ -29,6 +29,7 @@ cp ./kubecm/kubecm /usr/local/bin/
 curl -o kind-with-registry.sh https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/kind-with-registry.sh
 chmod u+x kind-with-registry.sh
 
+#调整为你的 Host 的 IP 地址
 MY_HOST_IP=192.168.127.91
 export API_SERVER_ADDR=${MY_HOST_IP}
 
@@ -50,6 +51,9 @@ make dev
 ```bash
 kubecm switch kind-control-plane
 helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
+
+#等待 FSM 相关组件启动完成
+kubectl get pods -A -o wide
 ```
 
 ### 3.4 集群 cluster1 部署 FSM 控制平面
@@ -57,6 +61,9 @@ helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alph
 ```bash
 kubecm switch kind-cluster1
 helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
+
+#等待 FSM 相关组件启动完成
+kubectl get pods -A -o wide
 ```
 
 ### 3.5 集群 cluster2 部署 FSM 控制平面
@@ -64,6 +71,9 @@ helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alph
 ```bash
 kubecm switch kind-cluster2
 helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
+
+#等待 FSM 相关组件启动完成
+kubectl get pods -A -o wide
 ```
 
 ### 3.6 集群 cluster1 加入集群 control-plane FSM 控制平面纳管
@@ -100,7 +110,55 @@ spec:
 EOF
 ```
 
-### 3.8 集群 cluster1 部署模拟服务
+## 4. 安装 osm-edge
+
+### 4.1 集群 Cluster1 安装 osm-edge
+
+```bash
+kubecm switch kind-cluster1
+export osm_namespace=osm-system
+export osm_mesh_name=osm
+dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
+osm install \
+    --mesh-name "$osm_mesh_name" \
+    --osm-namespace "$osm_namespace" \
+    --set=osm.certificateProvider.kind=tresor \
+    --set=osm.image.registry=localhost:5000/flomesh \
+    --set=osm.image.tag=latest \
+    --set=osm.image.pullPolicy=Always \
+    --set=osm.sidecarLogLevel=error \
+    --set=osm.controllerLogLevel=warn \
+    --timeout=900s \
+    --set=osm.localDNSProxy.enable=true \
+    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
+```
+
+### 4.2 集群 Cluster2 安装 osm-edge
+
+```bash
+kubecm switch kind-cluster2
+export osm_namespace=osm-system
+export osm_mesh_name=osm
+dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
+osm install \
+    --mesh-name "$osm_mesh_name" \
+    --osm-namespace "$osm_namespace" \
+    --set=osm.certificateProvider.kind=tresor \
+    --set=osm.image.registry=localhost:5000/flomesh \
+    --set=osm.image.tag=latest \
+    --set=osm.image.pullPolicy=Always \
+    --set=osm.sidecarLogLevel=error \
+    --set=osm.controllerLogLevel=warn \
+    --timeout=900s \
+    --set=osm.localDNSProxy.enable=true \
+    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
+```
+
+## 5. 多集群测试
+
+### 5.1 部署模拟业务服务
+
+#### 5.1.1 集群 cluster1 部署不被 osm edge 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -149,19 +207,83 @@ spec:
   selector:
     app: pipy-ok
 EOF
+
+#等待依赖的 POD 正常启动
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 ```
 
-### 3.9 集群 cluster2创建相应的 namespace
-
-```
-kubecm switch kind-cluster2
-kubectl create namespace pipy
-```
-
-### 3.10 集群 cluster1 导出模拟服务
+#### 5.1.2 集群 cluster1 部署被 osm edge 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster1
+kubectl create namespace pipy-osm
+osm namespace add pipy-osm
+cat <<EOF | kubectl apply -n pipy-osm -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok
+  labels:
+    app: pipy-ok
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+    spec:
+      containers:
+        - name: pipy-ok
+          image: flomesh/pipy:0.50.0-146
+          ports:
+            - name: pipy
+              containerPort: 8080
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8080)
+              .serveHTTP(new Message('Hi, I am from Cluster1 and controlled by OSM !'))
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: pipy-ok
+EOF
+
+#等待依赖的 POD 正常启动
+kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok --timeout=180s
+```
+
+#### 5.1.3 集群 cluster2 部署被 osm edge 纳管的客户端服务
+
+```bash
+kubecm switch kind-cluster2
+kubectl create namespace curl
+osm namespace add curl
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/curl.yaml
+
+#等待依赖的 POD 正常启动
+kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
+```
+
+#### 5.1.4 集群 cluster1 导出业务服务
+
+```bash
+kubecm switch kind-cluster1
+
 cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
@@ -174,54 +296,41 @@ spec:
       path: "/ok"
       pathType: Prefix
 EOF
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm"
+      pathType: Prefix
+EOF
+
+kubectl get serviceexports.flomesh.io -A
 ```
 
-### 3.11 集群 cluster2 导入模拟服务检查
+#### 3.1.5 集群 cluster2 导入业务服务
 
 ```bash
 kubecm switch kind-cluster2
+
+kubectl create namespace pipy
+kubectl create namespace pipy-osm
+osm namespace add pipy-osm
+
+#创建完 Namespace, 补偿创建ServiceImporI,有延迟,需等待
+kubectl get serviceimports.flomesh.io -A
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
+kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
 
 curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
 
 curl -si http://$API_SERVER_ADDR:8091/ok
-```
-
-## 4. 安装 osm-edge
-
-```bash
-kubecm switch kind-cluster2
-export osm_namespace=osm-system
-export osm_mesh_name=osm
-dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=localhost:5000/flomesh \
-    --set=osm.image.tag=latest \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
-    --timeout=900s \
-    --set=osm.localDNSProxy.enable=true \
-    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
-```
-
-## 5. 多集群测试
-
-
-### 5.1 部署模拟客户端
-
-```bash
-#模拟业务服务
-kubecm switch kind-cluster2
-kubectl create namespace curl
-osm namespace add curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/curl.yaml
-
-#等待依赖的 POD 正常启动
-kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
+curl -si http://$API_SERVER_ADDR:8091/ok-osm
 ```
 
 ### 5.2 场景测试一：导入集群不存在同质服务
@@ -239,7 +348,13 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 正确返回结果类似于:
 
 ```bash
-待补充...
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
 ```
 
 ### 5.3 场景测试二：导入集群存在同质无 SA 服务
