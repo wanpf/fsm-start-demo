@@ -291,9 +291,6 @@ metadata:
   namespace: pipy
   name: pipy-ok
 spec:
-  pathRewrite:
-    from: ^/ok/?
-    to: /
   rules:
     - portNumber: 8080
       path: "/ok"
@@ -307,9 +304,6 @@ metadata:
   namespace: pipy-osm
   name: pipy-ok
 spec:
-  pathRewrite:
-    from: ^/ok-osm/?
-    to: /
   rules:
     - portNumber: 8080
       path: "/ok-osm"
@@ -333,10 +327,10 @@ kubectl get serviceimports.flomesh.io -A
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
 kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
 
-curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
+#curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
 
-curl -si http://$API_SERVER_ADDR:8091/ok
-curl -si http://$API_SERVER_ADDR:8091/ok-osm/
+#curl -si http://$API_SERVER_ADDR:8091/ok
+#curl -si http://$API_SERVER_ADDR:8091/ok-osm/
 ```
 
 ### 5.2 场景测试一：导入集群不存在同质服务
@@ -344,9 +338,9 @@ curl -si http://$API_SERVER_ADDR:8091/ok-osm/
 #### 5.2.1 测试指令
 
 ```bash
+kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
-#kubectl logs "${curl_client}" -n curl -c sidecar
 ```
 
 #### 5.2.2 测试结果
@@ -361,6 +355,30 @@ content-length: 24
 connection: keep-alive
 
 Hi, I am from Cluster1 !
+```
+
+#### 5.2.3 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+```
+
+#### 5.2.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+osm-stats-namespace: pipy-osm
+osm-stats-kind: Deployment
+osm-stats-name: default
+osm-stats-pod: pipy-ok-5844475cc6-rk7v6
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
 ```
 
 ### 5.3 场景测试二：导入集群存在同质无 SA 服务
