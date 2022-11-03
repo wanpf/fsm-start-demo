@@ -123,8 +123,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=localhost:5000/flomesh \
-    --set=osm.image.tag=latest \
+    --set=osm.image.registry=cybwan \
+    --set=osm.image.tag=1.3.0-alpha.1 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -144,8 +144,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=localhost:5000/flomesh \
-    --set=osm.image.tag=latest \
+    --set=osm.image.registry=cybwan \
+    --set=osm.image.tag=1.3.0-alpha.1 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
