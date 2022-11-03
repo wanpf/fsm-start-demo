@@ -284,6 +284,7 @@ kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```bash
 kubecm switch kind-cluster1
 
+#kubectl delete serviceexports.flomesh.io -n pipy pipy-ok
 cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
@@ -297,6 +298,7 @@ spec:
       pathType: Prefix
 EOF
 
+#kubectl delete serviceexports.flomesh.io -n pipy-osm pipy-ok
 cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
@@ -433,10 +435,12 @@ EOF
 
 #### 5.3.2 测试指令
 
+连续执行两次:
+
 ```bash
+kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
-#kubectl logs "${curl_client}" -n curl -c sidecar
 ```
 
 #### 5.3.3 测试结果
@@ -444,12 +448,27 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 正确返回结果类似于:
 
 ```bash
-待补充...
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
+kubecm switch kind-cluster2
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
 ```
@@ -515,10 +534,12 @@ EOF
 
 #### 5.4.2 测试指令
 
+连续执行两次:
+
 ```bash
+kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
-#kubectl logs "${curl_client}" -n curl -c sidecar
 ```
 
 #### 5.4.3 测试结果
@@ -526,12 +547,27 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 正确返回结果类似于:
 
 ```bash
-待补充...
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 4
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
+kubecm switch kind-cluster2
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
