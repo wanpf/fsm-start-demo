@@ -327,10 +327,9 @@ kubectl get serviceimports.flomesh.io -A
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
 kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
 
-#curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
-
-#curl -si http://$API_SERVER_ADDR:8091/ok
-#curl -si http://$API_SERVER_ADDR:8091/ok-osm/
+curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
+curl -si http://$API_SERVER_ADDR:8091/ok
+curl -si http://$API_SERVER_ADDR:8091/ok-osm/
 ```
 
 ### 5.2 场景测试一：导入集群不存在同质服务
@@ -371,10 +370,8 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-os
 
 ```bash
 HTTP/1.1 200 OK
-osm-stats-namespace: pipy-osm
-osm-stats-kind: Deployment
-osm-stats-name: default
-osm-stats-pod: pipy-ok-5844475cc6-rk7v6
+server: pipy
+x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
