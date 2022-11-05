@@ -53,6 +53,18 @@ kubecm switch kind-control-plane
 helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
 
 #等待 FSM 相关组件启动完成
+sleep 5
+kubectl wait --for=condition=ready pod -n flomesh -l app=fsm-ingress-pipy --timeout=180s
+
+sleep 5
+selector="servicelb.flomesh.io/svcname=fsm-ingress-pipy-controller"
+alias wait_ingress="kubectl wait --for=condition=ready pod -n flomesh -l ${selector} --timeout=180s | wc -l"
+ingress_cnt=`wait_ingress`
+while [ ${ingress_cnt} -lt 2 ]
+do
+  ingress_cnt=`wait_ingress`
+done
+
 kubectl get pods -A -o wide
 ```
 
@@ -63,6 +75,18 @@ kubecm switch kind-cluster1
 helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
 
 #等待 FSM 相关组件启动完成
+sleep 5
+kubectl wait --for=condition=ready pod -n flomesh -l app=fsm-ingress-pipy --timeout=180s
+
+sleep 5
+selector="servicelb.flomesh.io/svcname=fsm-ingress-pipy-controller"
+alias wait_ingress="kubectl wait --for=condition=ready pod -n flomesh -l ${selector} --timeout=180s | wc -l"
+ingress_cnt=`wait_ingress`
+while [ ${ingress_cnt} -lt 2 ]
+do
+  ingress_cnt=`wait_ingress`
+done
+
 kubectl get pods -A -o wide
 ```
 
@@ -73,6 +97,18 @@ kubecm switch kind-cluster2
 helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
 
 #等待 FSM 相关组件启动完成
+sleep 5
+kubectl wait --for=condition=ready pod -n flomesh -l app=fsm-ingress-pipy --timeout=180s
+
+sleep 5
+selector="servicelb.flomesh.io/svcname=fsm-ingress-pipy-controller"
+alias wait_ingress="kubectl wait --for=condition=ready pod -n flomesh -l ${selector} --timeout=180s | wc -l"
+ingress_cnt=`wait_ingress`
+while [ ${ingress_cnt} -lt 2 ]
+do
+  ingress_cnt=`wait_ingress`
+done
+
 kubectl get pods -A -o wide
 ```
 
