@@ -10,8 +10,8 @@ FSM_NAMESPACE="${FSM_NAMESPACE:-flomesh}"
 FSM_VERSION="${FSM_VERSION:-latest}"
 FSM_CHART="${FSM_CHART:-charts/fsm}"
 
-kubecm switch ${KIND_CLUSTER_NAME}
-sleep 3
+kubecm switch kind-${KIND_CLUSTER_NAME}
+sleep 2
 
 helm install --namespace ${FSM_NAMESPACE} --create-namespace --set fsm.version=${FSM_VERSION} --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm ${FSM_CHART}
 
