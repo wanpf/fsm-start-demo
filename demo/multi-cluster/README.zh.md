@@ -554,7 +554,7 @@ kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
 ```
 
-### 5.5 场景测试四：禁用流量宽松模式测试
+### 5.5 场景测试四：禁用流量宽松模式
 
 #### 5.5.1 禁用流量宽松模式
 
