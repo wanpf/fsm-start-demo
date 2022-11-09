@@ -46,73 +46,22 @@ cd fsm
 make dev
 ```
 
-### 3.3 集群 control-plane 部署 FSM 控制平面
+### 3.3 部署 FSM 控制平面组件
 
 ```bash
-kubecm switch kind-control-plane
-helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
+curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/deploy-fsm-control-plane.sh
+chmod u+x deploy-fsm-control-plane.sh
 
-#等待 FSM 相关组件启动完成
-sleep 5
-kubectl wait --for=condition=ready pod -n flomesh -l app=fsm-ingress-pipy --timeout=180s
+export FSM_NAMESPACE=flomesh
+export FSM_VERSION=0.2.0-alpha.1-dev
+export FSM_CHART=charts/fsm
 
-sleep 5
-selector="servicelb.flomesh.io/svcname=fsm-ingress-pipy-controller"
-alias wait_ingress="kubectl wait --for=condition=ready pod -n flomesh -l ${selector} --timeout=180s | wc -l"
-ingress_cnt=`wait_ingress`
-while [ ${ingress_cnt} -lt 2 ]
-do
-  ingress_cnt=`wait_ingress`
-done
-
-kubectl get pods -A -o wide
+KIND_CLUSTER_NAME=control-plane ./deploy-fsm-control-plane.sh
+KIND_CLUSTER_NAME=cluster1 ./deploy-fsm-control-plane.sh
+KIND_CLUSTER_NAME=cluster2 ./deploy-fsm-control-plane.sh
 ```
 
-### 3.4 集群 cluster1 部署 FSM 控制平面
-
-```bash
-kubecm switch kind-cluster1
-helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
-
-#等待 FSM 相关组件启动完成
-sleep 5
-kubectl wait --for=condition=ready pod -n flomesh -l app=fsm-ingress-pipy --timeout=180s
-
-sleep 5
-selector="servicelb.flomesh.io/svcname=fsm-ingress-pipy-controller"
-alias wait_ingress="kubectl wait --for=condition=ready pod -n flomesh -l ${selector} --timeout=180s | wc -l"
-ingress_cnt=`wait_ingress`
-while [ ${ingress_cnt} -lt 2 ]
-do
-  ingress_cnt=`wait_ingress`
-done
-
-kubectl get pods -A -o wide
-```
-
-### 3.5 集群 cluster2 部署 FSM 控制平面
-
-```bash
-kubecm switch kind-cluster2
-helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.1-dev --set fsm.logLevel=5 --set fsm.serviceLB.enabled=true fsm charts/fsm/
-
-#等待 FSM 相关组件启动完成
-sleep 5
-kubectl wait --for=condition=ready pod -n flomesh -l app=fsm-ingress-pipy --timeout=180s
-
-sleep 5
-selector="servicelb.flomesh.io/svcname=fsm-ingress-pipy-controller"
-alias wait_ingress="kubectl wait --for=condition=ready pod -n flomesh -l ${selector} --timeout=180s | wc -l"
-ingress_cnt=`wait_ingress`
-while [ ${ingress_cnt} -lt 2 ]
-do
-  ingress_cnt=`wait_ingress`
-done
-
-kubectl get pods -A -o wide
-```
-
-### 3.6 集群 cluster1 加入集群 control-plane FSM 控制平面纳管
+### 3.4 集群 cluster1 加入多集群纳管
 
 ```bash
 kubecm switch kind-control-plane
@@ -129,7 +78,7 @@ spec:
 EOF
 ```
 
-### 3.7 集群 cluster2 加入集群 control-plane FSM 控制平面纳管
+### 3.5 集群 cluster2 加入多集群纳管
 
 ```bash
 kubecm switch kind-control-plane
@@ -355,9 +304,6 @@ kubectl get serviceexports.flomesh.io -A
 
 ```bash
 kubecm switch kind-cluster2
-
-kubectl create namespace pipy
-kubectl create namespace pipy-osm
 osm namespace add pipy-osm
 
 #创建完 Namespace, 补偿创建ServiceImporI,有延迟,需等待
@@ -365,7 +311,6 @@ kubectl get serviceimports.flomesh.io -A
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
 kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
 
-curl http://$API_SERVER_ADDR:8091/mesh/repo/default/default/default/local/services/config/registry.json | jq
 curl -si http://$API_SERVER_ADDR:8091/ok
 curl -si http://$API_SERVER_ADDR:8091/ok-osm/
 ```
@@ -598,6 +543,230 @@ content-length: 24
 connection: keep-alive
 
 Hi, I am from Cluster1 !
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubecm switch kind-cluster2
+kubectl delete deployments -n pipy pipy-ok
+kubectl delete service -n pipy pipy-ok
+kubectl delete serviceaccount -n pipy pipy
+```
+
+### 5.5 场景测试四：禁用流量宽松模式测试
+
+#### 5.5.1 禁用流量宽松模式
+
+```bash
+kubecm switch kind-cluster2
+export osm_namespace=osm-system
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":false}}}' --type=merge
+```
+
+#### 5.5.2 部署有SA业务服务
+
+```bash
+kubecm switch kind-cluster2
+osm namespace add pipy
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok
+  labels:
+    app: pipy-ok
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+    spec:
+      serviceAccountName: pipy
+      containers:
+        - name: pipy-ok
+          image: flomesh/pipy:0.50.0-146
+          ports:
+            - name: pipy
+              containerPort: 8080
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8080)
+              .serveHTTP(new Message('Hi, I am from Cluster2 !'))
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: pipy-ok
+EOF
+```
+
+#### 5.5.3 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.5.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 52
+```
+
+#### 5.5.5 设置流量策略
+
+```
+kubecm switch kind-cluster2
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: specs.smi-spec.io/v1alpha4
+kind: HTTPRouteGroup
+metadata:
+  name: pipy-ok-service-routes
+spec:
+  matches:
+  - name: pipy-ok
+    pathRegex: "/"
+    methods:
+    - GET
+EOF
+
+cat <<EOF | kubectl apply -n pipy -f -
+kind: TrafficTarget
+apiVersion: access.smi-spec.io/v1alpha3
+metadata:
+  name: curl-access-pipy-ok
+spec:
+  destination:
+    kind: ServiceAccount
+    name: pipy
+    namespace: pipy
+  rules:
+  - kind: HTTPRouteGroup
+    name: pipy-ok-service-routes
+    matches:
+    - pipy-ok
+  sources:
+  - kind: ServiceAccount
+    name: curl
+    namespace: curl
+EOF
+```
+
+#### 5.5.6 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.5.7 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+```
+
+#### 5.5.8 设置流量策略
+
+```
+kubecm switch kind-cluster2
+cat <<EOF | kubectl apply -n pipy-osm -f -
+apiVersion: specs.smi-spec.io/v1alpha4
+kind: HTTPRouteGroup
+metadata:
+  name: pipy-ok-service-routes
+spec:
+  matches:
+  - name: pipy-ok
+    pathRegex: "/"
+    methods:
+    - GET
+EOF
+
+cat <<EOF | kubectl apply -n pipy-osm -f -
+kind: TrafficTarget
+apiVersion: access.smi-spec.io/v1alpha3
+metadata:
+  name: curl-access-pipy-ok-osm
+spec:
+  destination:
+    kind: ServiceAccount
+    name: pipy
+    namespace: pipy-osm
+  rules:
+  - kind: HTTPRouteGroup
+    name: pipy-ok-service-routes
+    matches:
+    - pipy-ok
+  sources:
+  - kind: ServiceAccount
+    name: curl
+    namespace: curl
+EOF
+```
+
+#### 5.5.9 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+```
+
+#### 5.5.10 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
