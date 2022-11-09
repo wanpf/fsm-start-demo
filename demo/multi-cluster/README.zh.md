@@ -23,7 +23,15 @@ cp ./kubecm/kubecm /usr/local/bin/
 
 ## 3. 部署多集群环境
 
-### 3.1 部署控制平面集群和两个业务集群
+### 3.1 编译 FSM 控制平面组件
+
+```bash
+git clone -b release-v0.2 https://github.com/flomesh-io/fsm.git
+cd fsm
+make dev
+```
+
+### 3.2 部署控制平面集群和两个业务集群
 
 ```bash
 curl -o kind-with-registry.sh https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/kind-with-registry.sh
@@ -36,14 +44,6 @@ export API_SERVER_ADDR=${MY_HOST_IP}
 KIND_CLUSTER_NAME=control-plane MAPPING_HOST_PORT=8090 API_SERVER_PORT=6445 ./kind-with-registry.sh
 KIND_CLUSTER_NAME=cluster1 MAPPING_HOST_PORT=8091 API_SERVER_PORT=6446 ./kind-with-registry.sh
 KIND_CLUSTER_NAME=cluster2 MAPPING_HOST_PORT=8092 API_SERVER_PORT=6447 ./kind-with-registry.sh
-```
-
-### 3.2 编译 FSM 控制平面组件
-
-```bash
-git clone -b feature/service-export-n-import https://github.com/flomesh-io/fsm.git
-cd fsm
-make dev
 ```
 
 ### 3.3 部署 FSM 控制平面组件
@@ -554,7 +554,7 @@ kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
 ```
 
-### 5.5 场景测试四：禁用流量宽松模式
+### 5.5 场景测试四：禁用流量宽松模式测试
 
 #### 5.5.1 禁用流量宽松模式
 
