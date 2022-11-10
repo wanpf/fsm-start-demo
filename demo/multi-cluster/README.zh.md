@@ -194,6 +194,7 @@ spec:
 EOF
 
 #等待依赖的 POD 正常启动
+sleep 3
 kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 ```
 
@@ -249,6 +250,7 @@ spec:
 EOF
 
 #等待依赖的 POD 正常启动
+sleep 3
 kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok --timeout=180s
 ```
 
@@ -261,6 +263,7 @@ osm namespace add curl
 kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/curl.yaml
 
 #等待依赖的 POD 正常启动
+sleep 3
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```
 
@@ -298,6 +301,8 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
+curl -si http://$API_SERVER_ADDR:8091/ok
+curl -si http://$API_SERVER_ADDR:8091/ok-osm/
 ```
 
 #### 3.1.5 集群 cluster2 导入业务服务
@@ -310,9 +315,6 @@ osm namespace add pipy-osm
 kubectl get serviceimports.flomesh.io -A
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
 kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
-
-curl -si http://$API_SERVER_ADDR:8091/ok
-curl -si http://$API_SERVER_ADDR:8091/ok-osm/
 ```
 
 ### 5.2 场景测试一：导入集群不存在同质服务
@@ -412,6 +414,10 @@ spec:
   selector:
     app: pipy-ok
 EOF
+
+#等待依赖的 POD 正常启动
+sleep 3
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 ```
 
 #### 5.3.2 测试指令
@@ -511,6 +517,10 @@ spec:
   selector:
     app: pipy-ok
 EOF
+
+#等待依赖的 POD 正常启动
+sleep 3
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 ```
 
 #### 5.4.2 测试指令
@@ -554,7 +564,7 @@ kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
 ```
 
-### 5.5 场景测试四：禁用流量宽松模式测试
+### 5.5 场景测试四：禁用流量宽松模式
 
 #### 5.5.1 禁用流量宽松模式
 
@@ -619,6 +629,10 @@ spec:
   selector:
     app: pipy-ok
 EOF
+
+#等待依赖的 POD 正常启动
+sleep 3
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 ```
 
 #### 5.5.3 测试指令
