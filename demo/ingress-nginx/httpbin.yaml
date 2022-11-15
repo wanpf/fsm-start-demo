@@ -23,7 +23,7 @@ metadata:
   name: httpbin-port-different-with-targetport
   labels:
     app: httpbin
-    service: httpbin
+    service: httpbin-port-different-with-targetport
 spec:
   ports:
     - name: http
