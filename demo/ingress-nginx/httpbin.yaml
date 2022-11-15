@@ -20,10 +20,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin-port-different-with-targetport
+  name: httpbin-8080
   labels:
     app: httpbin
-    service: httpbin-port-different-with-targetport
+    service: httpbin-8080
 spec:
   ports:
     - name: http
