@@ -17,6 +17,21 @@ spec:
   selector:
     app: httpbin
 ---
+apiVersion: v1
+kind: ServiceWithTargetPort
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 14001
+  selector:
+    app: httpbin
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
