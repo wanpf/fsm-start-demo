@@ -18,9 +18,9 @@ spec:
     app: httpbin
 ---
 apiVersion: v1
-kind: ServiceWithTargetPort
+kind: Service
 metadata:
-  name: httpbin
+  name: httpbin-port-different-with-targetport
   labels:
     app: httpbin
     service: httpbin
