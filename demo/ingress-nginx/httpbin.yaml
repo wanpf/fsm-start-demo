@@ -13,22 +13,8 @@ metadata:
 spec:
   ports:
   - name: http
-    port: 14001
-  selector:
-    app: httpbin
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: httpbin-8080
-  labels:
-    app: httpbin
-    service: httpbin-8080
-spec:
-  ports:
-    - name: http
-      port: 8080
-      targetPort: 14001
+    port: 8080
+    targetPort: 14001
   selector:
     app: httpbin
 ---
