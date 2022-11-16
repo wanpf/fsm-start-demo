@@ -53,7 +53,7 @@ curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/osm
 chmod u+x deploy-fsm-control-plane.sh
 
 export FSM_NAMESPACE=flomesh
-export FSM_VERSION=0.2.0-alpha.2-dev
+export FSM_VERSION=0.2.0-alpha.4-dev
 export FSM_CHART=charts/fsm
 
 KIND_CLUSTER_NAME=control-plane ./deploy-fsm-control-plane.sh
@@ -148,54 +148,11 @@ osm install \
 ```bash
 kubecm switch kind-cluster1
 kubectl create namespace pipy
-cat <<EOF | kubectl apply -n pipy -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: pipy-ok
-  labels:
-    app: pipy-ok
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: pipy-ok
-  template:
-    metadata:
-      labels:
-        app: pipy-ok
-    spec:
-      containers:
-        - name: pipy-ok
-          image: flomesh/pipy:0.50.0-146
-          ports:
-            - name: pipy
-              containerPort: 8080
-          command:
-            - pipy
-            - -e
-            - |
-              pipy()
-              .listen(8080)
-              .serveHTTP(new Message('Hi, I am from Cluster1 !'))
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: pipy-ok
-spec:
-  ports:
-    - name: pipy
-      port: 8080
-      targetPort: 8080
-      protocol: TCP
-  selector:
-    app: pipy-ok
-EOF
+kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/pipy-ok-c1.pipy.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
-kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok-c1 --timeout=180s
 ```
 
 #### 5.1.2 集群 cluster1 部署被 osm edge 纳管的业务服务
@@ -204,54 +161,11 @@ kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 kubecm switch kind-cluster1
 kubectl create namespace pipy-osm
 osm namespace add pipy-osm
-cat <<EOF | kubectl apply -n pipy-osm -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: pipy-ok
-  labels:
-    app: pipy-ok
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: pipy-ok
-  template:
-    metadata:
-      labels:
-        app: pipy-ok
-    spec:
-      containers:
-        - name: pipy-ok
-          image: flomesh/pipy:0.50.0-146
-          ports:
-            - name: pipy
-              containerPort: 8080
-          command:
-            - pipy
-            - -e
-            - |
-              pipy()
-              .listen(8080)
-              .serveHTTP(new Message('Hi, I am from Cluster1 and controlled by OSM !'))
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: pipy-ok
-spec:
-  ports:
-    - name: pipy
-      port: 8080
-      targetPort: 8080
-      protocol: TCP
-  selector:
-    app: pipy-ok
-EOF
+kubectl apply -n pipy-osm -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/pipy-ok-c1.pipy-osm.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
-kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok --timeout=180s
+kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok-c1 --timeout=180s
 ```
 
 #### 5.1.3 集群 cluster2 部署被 osm edge 纳管的客户端服务
@@ -260,7 +174,7 @@ kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok --timeout=180s
 kubecm switch kind-cluster2
 kubectl create namespace curl
 osm namespace add curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/curl.yaml
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/curl.curl.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
@@ -272,7 +186,6 @@ kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```bash
 kubecm switch kind-cluster1
 
-#kubectl delete serviceexports.flomesh.io -n pipy pipy-ok
 cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
@@ -280,29 +193,54 @@ metadata:
   namespace: pipy
   name: pipy-ok
 spec:
+  serviceAccountName: "*"
   rules:
     - portNumber: 8080
       path: "/ok"
       pathType: Prefix
-EOF
-
-#kubectl delete serviceexports.flomesh.io -n pipy-osm pipy-ok
-cat <<EOF | kubectl apply -f -
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  serviceAccountName: "*"
+  rules:
+    - portNumber: 8080
+      path: "/ok-c1"
+      pathType: Prefix
+---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
   namespace: pipy-osm
   name: pipy-ok
 spec:
+  serviceAccountName: "*"
   rules:
     - portNumber: 8080
       path: "/ok-osm"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok-c1
+spec:
+  serviceAccountName: "*"
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm-c1"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -si http://$API_SERVER_ADDR:8091/ok
-curl -si http://$API_SERVER_ADDR:8091/ok-osm/
+curl -si http://$API_SERVER_ADDR:8091/ok-c1
+curl -si http://$API_SERVER_ADDR:8091/ok-osm
+curl -si http://$API_SERVER_ADDR:8091/ok-osm-c1
 ```
 
 #### 3.1.5 集群 cluster2 导入业务服务
@@ -314,7 +252,9 @@ osm namespace add pipy-osm
 #创建完 Namespace, 补偿创建ServiceImporI,有延迟,需等待
 kubectl get serviceimports.flomesh.io -A
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
+kubectl get serviceimports.flomesh.io -n pipy pipy-ok-c1 -o yaml
 kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
+kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok-c1 -o yaml
 ```
 
 ### 5.2 场景测试一：导入集群不存在同质服务
@@ -324,7 +264,7 @@ kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy:8080/
 ```
 
 #### 5.2.2 测试结果
@@ -564,7 +504,7 @@ kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
 ```
 
-### 5.5 场景测试四：禁用流量宽松模式
+### 5.5 场景测试四：多集群SMI流量策略
 
 #### 5.5.1 禁用流量宽松模式
 
@@ -651,7 +591,7 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 command terminated with exit code 52
 ```
 
-#### 5.5.5 设置流量策略
+#### 5.5.5 设置流量策略[curl访问 pipy-ok.pipy]
 
 ```
 kubecm switch kind-cluster2
@@ -690,39 +630,7 @@ spec:
 EOF
 ```
 
-#### 5.5.6 测试指令
-
-连续执行两次:
-
-```bash
-kubecm switch kind-cluster2
-curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
-```
-
-#### 5.5.7 测试结果
-
-正确返回结果类似于:
-
-```bash
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 3
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster1 !
-
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 6
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster2 !
-```
-
-#### 5.5.8 设置流量策略
+#### 5.5.6 设置流量策略[curl访问 pipy-ok.pipy-osm]
 
 ```
 kubecm switch kind-cluster2
@@ -761,7 +669,101 @@ spec:
 EOF
 ```
 
-#### 5.5.9 测试指令
+#### 5.5.7 集群 cluster1 导出任意 SA 业务服务
+
+```bash
+kubecm switch kind-cluster1
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  serviceAccountName: "*"
+  rules:
+    - portNumber: 8080
+      path: "/ok"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  serviceAccountName: "*"
+  rules:
+    - portNumber: 8080
+      path: "/ok-c1"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  serviceAccountName: "*"
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok-c1
+spec:
+  serviceAccountName: "*"
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm-c1"
+      pathType: Prefix
+EOF
+
+kubectl get serviceexports.flomesh.io -A
+curl -si http://$API_SERVER_ADDR:8091/ok
+curl -si http://$API_SERVER_ADDR:8091/ok-c1
+curl -si http://$API_SERVER_ADDR:8091/ok-osm
+curl -si http://$API_SERVER_ADDR:8091/ok-osm-c1
+```
+
+#### 5.5.8 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.5.9 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+```
+
+#### 5.5.10 测试指令
 
 ```bash
 kubecm switch kind-cluster2
@@ -769,7 +771,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
 ```
 
-#### 5.5.10 测试结果
+#### 5.5.11 测试结果
 
 正确返回结果类似于:
 
@@ -781,6 +783,295 @@ content-length: 46
 connection: keep-alive
 
 Hi, I am from Cluster1 and controlled by OSM !
+```
+
+#### 5.5.12 集群 cluster1 导出无 SA 业务服务
+
+```bash
+kubecm switch kind-cluster1
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  rules:
+    - portNumber: 8080
+      path: "/ok"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  rules:
+    - portNumber: 8080
+      path: "/ok-c1"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok-c1
+spec:
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm-c1"
+      pathType: Prefix
+EOF
+
+kubectl get serviceexports.flomesh.io -A
+curl -si http://$API_SERVER_ADDR:8091/ok
+curl -si http://$API_SERVER_ADDR:8091/ok-c1
+curl -si http://$API_SERVER_ADDR:8091/ok-osm
+curl -si http://$API_SERVER_ADDR:8091/ok-osm-c1
+```
+
+#### 5.5.13 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.5.14 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 1
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+```
+
+#### 5.5.15 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+```
+
+#### 5.5.11 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 7
+```
+
+#### 5.5.12 集群 cluster1 导出特定 SA 业务服务
+
+```bash
+kubecm switch kind-cluster1
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  serviceAccountName: pipy
+  rules:
+    - portNumber: 8080
+      path: "/ok"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  serviceAccountName: pipy
+  rules:
+    - portNumber: 8080
+      path: "/ok-c1"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  serviceAccountName: pipy
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm"
+      pathType: Prefix
+---
+apiVersion: flomesh.io/v1alpha1
+kind: ServiceExport
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok-c1
+spec:
+  serviceAccountName: pipy
+  rules:
+    - portNumber: 8080
+      path: "/ok-osm-c1"
+      pathType: Prefix
+EOF
+
+kubectl get serviceexports.flomesh.io -A
+curl -si http://$API_SERVER_ADDR:8091/ok
+curl -si http://$API_SERVER_ADDR:8091/ok-c1
+curl -si http://$API_SERVER_ADDR:8091/ok-osm
+curl -si http://$API_SERVER_ADDR:8091/ok-osm-c1
+```
+
+#### 5.5.13 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.5.14 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+```
+
+#### 5.5.15 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+```
+
+#### 5.5.16 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
+```
+
+#### 5.5.17 设置分流策略[pipy-ok.pipy]
+
+```
+kubecm switch kind-cluster2
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: split.smi-spec.io/v1alpha2
+kind: TrafficSplit
+metadata:
+  name: pipy-ok-split
+spec:
+  service: pipy-ok
+  backends:
+  - service: pipy-ok
+    weight: 50
+  - service: pipy-ok-c1
+    weight: 50
+EOF
+```
+
+#### 5.5.18 测试指令
+
+连续执行四次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.5.19 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !%
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !%
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !%
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -799,4 +1090,3 @@ kind delete cluster --name control-plane
 kind delete cluster --name cluster1
 kind delete cluster --name cluster2
 ```
-
