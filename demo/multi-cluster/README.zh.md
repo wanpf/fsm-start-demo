@@ -259,7 +259,66 @@ kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok-c1 -o yaml
 
 ### 5.2 场景测试一：导入集群不存在同质服务
 
-#### 5.2.1 测试指令
+#### 5.2.1 设置多集群流量负载均衡策略: Locality
+
+如未做设置,多集群流量负载均衡策略默认为: Locality
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: Locality
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  lbType: Locality
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  lbType: Locality
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok-c1
+spec:
+  lbType: Locality
+EOF
+```
+
+#### 5.2.2 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.2.3 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 7
+```
+
+#### 5.2.4 测试指令
 
 ```bash
 kubecm switch kind-cluster2
@@ -267,7 +326,96 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy:8080/
 ```
 
-#### 5.2.2 测试结果
+#### 5.2.5 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 7
+```
+
+#### 5.2.6 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+```
+
+#### 5.2.7 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 7
+```
+
+#### 5.2.8 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-osm:8080/
+```
+
+#### 5.2.9 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 7
+```
+
+#### 5.2.10 设置多集群流量负载均衡策略: ActiveActive
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  lbType: ActiveActive
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok-c1
+spec:
+  lbType: ActiveActive
+EOF
+```
+
+#### 5.2.11 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.2.12 测试结果
 
 正确返回结果类似于:
 
@@ -281,7 +429,29 @@ connection: keep-alive
 Hi, I am from Cluster1 !
 ```
 
-#### 5.2.3 测试指令
+#### 5.2.13 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy:8080/
+```
+
+#### 5.2.14 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+```
+
+#### 5.2.15 测试指令
 
 ```bash
 kubecm switch kind-cluster2
@@ -289,7 +459,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
 ```
 
-#### 5.2.4 测试结果
+#### 5.2.16 测试结果
 
 正确返回结果类似于:
 
@@ -301,6 +471,37 @@ content-length: 46
 connection: keep-alive
 
 Hi, I am from Cluster1 and controlled by OSM !
+```
+
+#### 5.2.17 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-osm:8080/
+```
+
+#### 5.2.18 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
+```
+
+本业务场景测试完毕，清理策略，以避免影响后续测试
+
+```bash
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c1
 ```
 
 ### 5.3 场景测试二：导入集群存在同质无 SA 服务
@@ -360,7 +561,27 @@ sleep 3
 kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 ```
 
-#### 5.3.2 测试指令
+#### 5.3.2 设置多集群流量负载均衡策略: Locality
+
+如未做设置,多集群流量负载均衡策略默认为: Locality
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: Locality
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
+```
+
+#### 5.3.3 测试指令
 
 连续执行两次:
 
@@ -370,7 +591,59 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
 ```
 
-#### 5.3.3 测试结果
+#### 5.3.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 8
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 8
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+```
+
+分析测试结果:请求只有 cluster2 集群的服务响应
+
+#### 5.3.5 设置多集群流量负载均衡策略: ActiveActive
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
+```
+
+#### 5.3.6 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.3.7 测试结果
 
 正确返回结果类似于:
 
@@ -392,12 +665,15 @@ connection: keep-alive
 Hi, I am from Cluster2 !
 ```
 
+分析测试结果:请求被 cluster1 和 cluster2 两个集群的服务响应
+
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
 kubecm switch kind-cluster2
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 ```
 
 ### 5.4 场景测试三：导入集群存在同质有 SA 服务
@@ -463,7 +739,27 @@ sleep 3
 kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
 ```
 
-#### 5.4.2 测试指令
+#### 5.4.2 设置多集群流量负载均衡策略: Locality
+
+如未做设置,多集群流量负载均衡策略默认为: Locality
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: Locality
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
+```
+
+#### 5.4.3 测试指令
 
 连续执行两次:
 
@@ -473,7 +769,57 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
 ```
 
-#### 5.4.3 测试结果
+#### 5.4.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 4
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+```
+
+#### 5.4.5 设置多集群流量负载均衡策略: ActiveActive
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
+```
+
+#### 5.4.6 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.4.7 测试结果
 
 正确返回结果类似于:
 
@@ -502,6 +848,7 @@ kubecm switch kind-cluster2
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 ```
 
 ### 5.5 场景测试四：多集群SMI流量策略
@@ -731,7 +1078,34 @@ curl -si http://$API_SERVER_ADDR:8091/ok-osm
 curl -si http://$API_SERVER_ADDR:8091/ok-osm-c1
 ```
 
-#### 5.5.8 测试指令
+#### 5.5.8 设置多集群流量负载均衡策略: ActiveActive
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok -o yaml
+```
+
+#### 5.5.9 测试指令
 
 连续执行两次:
 
@@ -741,7 +1115,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
 ```
 
-#### 5.5.9 测试结果
+#### 5.5.10 测试结果
 
 正确返回结果类似于:
 
@@ -763,7 +1137,9 @@ connection: keep-alive
 Hi, I am from Cluster2 !
 ```
 
-#### 5.5.10 测试指令
+#### 5.5.11 测试指令
+
+连续执行两次:
 
 ```bash
 kubecm switch kind-cluster2
@@ -771,7 +1147,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
 ```
 
-#### 5.5.11 测试结果
+#### 5.5.12 测试结果
 
 正确返回结果类似于:
 
@@ -783,9 +1159,17 @@ content-length: 46
 connection: keep-alive
 
 Hi, I am from Cluster1 and controlled by OSM !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 4
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
 ```
 
-#### 5.5.12 集群 cluster1 导出无 SA 业务服务
+#### 5.5.13 集群 cluster1 导出无 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -843,7 +1227,52 @@ curl -si http://$API_SERVER_ADDR:8091/ok-osm
 curl -si http://$API_SERVER_ADDR:8091/ok-osm-c1
 ```
 
-#### 5.5.13 测试指令
+#### 5.5.14 设置多集群流量负载均衡策略: ActiveActive
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  lbType: ActiveActive
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy-osm
+  name: pipy-ok-c1
+spec:
+  lbType: ActiveActive
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1 -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c1 -o yaml
+```
+
+#### 5.5.15 测试指令
 
 连续执行两次:
 
@@ -853,7 +1282,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
 ```
 
-#### 5.5.14 测试结果
+#### 5.5.16 测试结果
 
 正确返回结果类似于:
 
@@ -875,15 +1304,15 @@ connection: keep-alive
 Hi, I am from Cluster2 !
 ```
 
-#### 5.5.15 测试指令
+#### 5.5.17 测试指令
 
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy:8080/
 ```
 
-#### 5.5.11 测试结果
+#### 5.5.18 测试结果
 
 正确返回结果类似于:
 
@@ -891,7 +1320,39 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-os
 command terminated with exit code 7
 ```
 
-#### 5.5.12 集群 cluster1 导出特定 SA 业务服务
+#### 5.5.19 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+```
+
+#### 5.5.20 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 7
+```
+
+#### 5.5.21 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-osm:8080/
+```
+
+#### 5.5.22 测试结果
+
+正确返回结果类似于:
+
+```bash
+command terminated with exit code 7
+```
+
+#### 5.5.23 集群 cluster1 导出特定 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -953,7 +1414,7 @@ curl -si http://$API_SERVER_ADDR:8091/ok-osm
 curl -si http://$API_SERVER_ADDR:8091/ok-osm-c1
 ```
 
-#### 5.5.13 测试指令
+#### 5.5.24 测试指令
 
 连续执行两次:
 
@@ -963,7 +1424,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
 ```
 
-#### 5.5.14 测试结果
+#### 5.5.25 测试结果
 
 正确返回结果类似于:
 
@@ -985,7 +1446,41 @@ connection: keep-alive
 Hi, I am from Cluster2 !
 ```
 
-#### 5.5.15 测试指令
+#### 5.5.26 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy:8080/
+```
+
+#### 5.5.27 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 2
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 2
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+```
+
+#### 5.5.29 测试指令
+
+连续执行两次:
 
 ```bash
 kubecm switch kind-cluster2
@@ -993,7 +1488,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
 ```
 
-#### 5.5.16 测试结果
+#### 5.5.30 测试结果
 
 正确返回结果类似于:
 
@@ -1005,9 +1500,110 @@ content-length: 46
 connection: keep-alive
 
 Hi, I am from Cluster1 and controlled by OSM !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
 ```
 
-#### 5.5.17 设置分流策略[pipy-ok.pipy]
+#### 5.5.31 测试指令
+
+连续执行两次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-osm:8080/
+```
+
+#### 5.5.32 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 46
+connection: keep-alive
+
+Hi, I am from Cluster1 and controlled by OSM !
+```
+
+#### 5.5.33 设置多集群流量负载均衡权重策略
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: ActiveActive
+  targets:
+    - clusterKey: default/default/default/cluster1
+      weight: 50
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1 -o yaml
+```
+
+#### 5.5.34 测试指令
+
+连续执行三次:
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+#### 5.5.35 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 6
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+```
+
+#### 5.5.36 设置分流策略[pipy-ok.pipy]
 
 ```
 kubecm switch kind-cluster2
@@ -1026,7 +1622,7 @@ spec:
 EOF
 ```
 
-#### 5.5.18 测试指令
+#### 5.5.37 测试指令
 
 连续执行四次:
 
@@ -1036,7 +1632,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
 ```
 
-#### 5.5.19 测试结果
+#### 5.5.38 测试结果
 
 正确返回结果类似于:
 
@@ -1081,6 +1677,15 @@ kubecm switch kind-cluster2
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
+kubectl delete trafficsplits.split.smi-spec.io -n pipy pipy-ok-split
+kubectl delete traffictargets.access.smi-spec.io -n pipy curl-access-pipy-ok
+kubectl delete traffictargets.access.smi-spec.io -n pipy-osm curl-access-pipy-ok-osm
+kubectl delete httproutegroups.specs.smi-spec.io -n pipy pipy-ok-service-routes
+kubectl delete httproutegroups.specs.smi-spec.io -n pipy-osm pipy-ok-service-routes
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c1
 ```
 
 ## 6. 多集群卸载
@@ -1090,3 +1695,4 @@ kind delete cluster --name control-plane
 kind delete cluster --name cluster1
 kind delete cluster --name cluster2
 ```
+
