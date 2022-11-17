@@ -2478,4 +2478,5 @@ kubectl delete serviceaccount -n pipy pipy
 kind delete cluster --name control-plane
 kind delete cluster --name cluster1
 kind delete cluster --name cluster2
+kind delete cluster --name cluster3
 ```
