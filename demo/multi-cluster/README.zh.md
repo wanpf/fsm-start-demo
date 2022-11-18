@@ -354,7 +354,7 @@ kubectl get serviceexports.flomesh.io -A
 curl -si http://$API_SERVER_ADDR:8093/c3/ok
 curl -si http://$API_SERVER_ADDR:8093/c3/ok-c3
 curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -si http://$API_SERVER_ADDR:8093/c3ok-osm-c3
+curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
 ```
 
 #### 5.1.7 集群 cluster2 导入业务服务
@@ -786,6 +786,7 @@ Hi, I am from Cluster3 and controlled by OSM !
 
 ```bash
 kubecm switch kind-cluster2
+kubectl get globaltrafficpolicies.flomesh.io -A
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c3
@@ -873,7 +874,7 @@ kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
 
 #### 5.3.3 测试指令
 
-连续执行三次:
+连续执行多次:
 
 ```bash
 kubecm switch kind-cluster2
@@ -883,25 +884,9 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 
 #### 5.3.4 测试结果
 
-正确返回结果类似于:
+每次正确返回结果类似于:
 
 ```bash
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 8
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster2 !
-
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 8
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster2 !
-
 HTTP/1.1 200 OK
 server: pipy
 x-pipy-upstream-service-time: 8
@@ -974,6 +959,8 @@ Hi, I am from Cluster3 !
 分析测试结果:请求被三个集群的服务响应
 
 #### 5.3.8 设置多集群流量负载均衡策略: ActiveActive
+
+导入的集群服务，只允许 cluster1 下的pipy-ok.pipy参与集群间负载均衡
 
 ```bash
 kubecm switch kind-cluster2
@@ -1050,6 +1037,7 @@ Hi, I am from Cluster1 !
 kubecm switch kind-cluster2
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
+kubectl get globaltrafficpolicies.flomesh.io -A
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 ```
 
@@ -1138,7 +1126,7 @@ kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
 
 #### 5.4.3 测试指令
 
-连续执行三次:
+连续执行多次:
 
 ```bash
 kubecm switch kind-cluster2
@@ -1148,28 +1136,12 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 
 #### 5.4.4 测试结果
 
-正确返回结果类似于:
+每次正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
 server: pipy
 x-pipy-upstream-service-time: 4
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster2 !
-
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 3
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster2 !
-
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 3
 content-length: 24
 connection: keep-alive
 
@@ -1215,6 +1187,14 @@ x-pipy-upstream-service-time: 4
 content-length: 24
 connection: keep-alive
 
+Hi, I am from Cluster1 !
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 3
+content-length: 24
+connection: keep-alive
+
 Hi, I am from Cluster2 !
 
 HTTP/1.1 200 OK
@@ -1224,19 +1204,13 @@ content-length: 24
 connection: keep-alive
 
 Hi, I am from Cluster3 !
-
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 3
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster1 !
 ```
 
 分析测试结果:请求被三个集群的服务响应
 
 #### 5.4.8 设置多集群流量负载均衡策略: ActiveActive
+
+导入的集群服务，只允许 cluster3 下的pipy-ok.pipy参与集群间负载均衡
 
 ```bash
 kubecm switch kind-cluster2
@@ -1314,6 +1288,7 @@ kubecm switch kind-cluster2
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
+kubectl get globaltrafficpolicies.flomesh.io -A
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 ```
 
@@ -1892,7 +1867,7 @@ kubectl get globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok -o yaml
 
 ##### 5.5.15.4 测试指令
 
-连续执行两次:
+连续执行多次:
 
 ```bash
 kubecm switch kind-cluster2
@@ -1902,20 +1877,12 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 
 ##### 5.5.15.5 测试结果
 
-正确返回结果类似于:
+每次正确返回结果类似于:
 
 ```bash
 HTTP/1.1 200 OK
 server: pipy
 x-pipy-upstream-service-time: 1
-content-length: 24
-connection: keep-alive
-
-Hi, I am from Cluster2 !
-
-HTTP/1.1 200 OK
-server: pipy
-x-pipy-upstream-service-time: 6
 content-length: 24
 connection: keep-alive
 
@@ -2188,7 +2155,7 @@ EOF
 kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
 ```
 
-本集群服务默认权重为 100，故 50%流量送 cluster2，20%流量送 cluster1，20%流量送 cluster3
+本集群服务默认权重为 100，故 50%流量送 cluster2，25%流量送 cluster1，25%流量送 cluster3
 
 ##### 5.5.17.2 测试指令
 
@@ -2288,6 +2255,8 @@ EOF
 
 三个集群都有 pipy-ok 服务，故均分权重 75，每个权重 25；只有 cluster1 有pipy-ok-c1，独占权重 25
 
+故 50%流量送 cluster1，25%流量送 cluster2，25%流量送 cluster1
+
 ##### 5.5.18.3 测试指令
 
 连续执行四次:
@@ -2336,7 +2305,7 @@ connection: keep-alive
 Hi, I am from Cluster2 !
 ```
 
-#### 5.5.19 场景测试四-6: 多集群流量FailOver测试
+#### 5.5.19 场景测试四-6.1: 多集群流量FailOver测试
 
 ##### 5.5.19.1 设置多集群流量负载均衡策略: FailOver
 
@@ -2452,21 +2421,134 @@ connection: keep-alive
 Hi, I am from Cluster1 !
 ```
 
+#### 5.5.20 场景测试四-6.2: 多集群流量FailOver测试
+
+##### 5.5.20.1 部署有SA业务服务
+
+服务目标端口和控制网关暴露端口相同
+
+```bash
+kubecm switch kind-cluster2
+osm namespace add pipy
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok
+  labels:
+    app: pipy-ok
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+    spec:
+      serviceAccountName: pipy
+      containers:
+        - name: pipy-ok
+          image: flomesh/pipy:0.50.0-146
+          ports:
+            - name: pipy
+              containerPort: 8091
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8091)
+              .serveHTTP(new Message('Hi, I am from Cluster2 !'))
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8091
+      protocol: TCP
+  selector:
+    app: pipy-ok
+EOF
+
+#等待依赖的 POD 正常启动
+sleep 3
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
+```
+
+##### 5.5.20.2 设置多集群流量负载均衡策略: FailOver
+
+```bash
+kubecm switch kind-cluster2
+
+cat <<EOF | kubectl apply -f -
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok-c1
+spec:
+  lbType: Locality
+---
+apiVersion: flomesh.io/v1alpha1
+kind: GlobalTrafficPolicy
+metadata:
+  namespace: pipy
+  name: pipy-ok
+spec:
+  lbType: FailOver
+  targets:
+    - clusterKey: default/default/default/cluster1
+      weight: 100
+EOF
+
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1 -o yaml
+```
+
+##### 5.5.20.3 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+##### 5.5.20.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 1
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster1 !
+```
+
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
 kubecm switch kind-cluster2
+kubectl get trafficsplits.split.smi-spec.io -A
 kubectl delete trafficsplits.split.smi-spec.io -n pipy pipy-ok-split
+kubectl get traffictargets.access.smi-spec.io -A
 kubectl delete traffictargets.access.smi-spec.io -n pipy curl-access-pipy-ok
 kubectl delete traffictargets.access.smi-spec.io -n pipy-osm curl-access-pipy-ok-osm
+kubectl get httproutegroups.specs.smi-spec.io -A
 kubectl delete httproutegroups.specs.smi-spec.io -n pipy pipy-ok-service-routes
 kubectl delete httproutegroups.specs.smi-spec.io -n pipy-osm pipy-ok-service-routes
+kubectl get globaltrafficpolicies.flomesh.io -A
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1
-kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c3
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok
-kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c1
-kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c3
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy
