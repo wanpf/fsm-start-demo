@@ -14,11 +14,7 @@ cp ./${system}-${arch}/osm /usr/local/bin/
 ## 2. 下载并安装 kubecm 命令行工具
 
 ```bash
-system=$(uname -s | tr [:upper:] [:lower:])
-arch=$(dpkg --print-architecture)
-release=v0.21.0
-curl -L https://github.com/sunny0826/kubecm/releases/download/${release}/kubecm_${release}_${system}_${arch}.tar.gz | tar -vxzf -
-cp ./kubecm/kubecm /usr/local/bin/
+https://github.com/sunny0826/kubecm/releases
 ```
 
 ## 3. 部署多集群环境
