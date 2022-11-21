@@ -260,10 +260,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8091/c1/ok
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
 #### 5.1.4 集群 cluster3 部署不被 osm edge 纳管的业务服务
@@ -347,10 +347,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8093/c3/ok
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
 ```
 
 #### 5.1.7 集群 cluster2 导入业务服务
@@ -1549,10 +1549,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8091/c1/ok
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
 ##### 5.5.14.2 集群 cluster3 导出任意 SA 业务服务
@@ -1611,10 +1611,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8093/c3/ok
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
 ```
 
 ##### 5.5.14.3 设置多集群流量负载均衡策略: ActiveActive
@@ -1770,10 +1770,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8091/c1/ok
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
 ##### 5.5.15.2 集群 cluster3 导出无 SA 业务服务
@@ -1828,10 +1828,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8093/c3/ok
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
 ```
 
 ##### 5.5.15.3 设置多集群流量负载均衡策略: ActiveActive
@@ -1959,10 +1959,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8091/c1/ok
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -si http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
 ##### 5.5.16.2 集群 cluster3 导出特定 SA 业务服务
@@ -2021,10 +2021,10 @@ spec:
 EOF
 
 kubectl get serviceexports.flomesh.io -A
-curl -si http://$API_SERVER_ADDR:8093/c3/ok
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -si http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
 ```
 
 ##### 5.5.16.3 设置多集群流量负载均衡策略: ActiveActive
@@ -2251,7 +2251,7 @@ EOF
 
 三个集群都有 pipy-ok 服务，故均分权重 75，每个权重 25；只有 cluster1 有pipy-ok-c1，独占权重 25
 
-故 50%流量送 cluster1，25%流量送 cluster2，25%流量送 cluster1
+故 50%流量送 cluster1，25%流量送 cluster2，25%流量送 cluster3
 
 ##### 5.5.18.3 测试指令
 
@@ -2516,6 +2516,73 @@ kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:80
 ```
 
 ##### 5.5.20.4 测试结果
+
+正确返回结果类似于:
+
+```bash
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 1
+content-length: 24
+connection: keep-alive
+
+Hi, I am from Cluster2 !
+```
+
+##### 5.5.20.5 部署返回错误的业务服务
+
+服务目标端口和控制网关暴露端口相同
+
+```bash
+kubecm switch kind-cluster2
+osm namespace add pipy
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok
+  labels:
+    app: pipy-ok
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+    spec:
+      serviceAccountName: pipy
+      containers:
+        - name: pipy-ok
+          image: flomesh/pipy:0.50.0-146
+          ports:
+            - name: pipy
+              containerPort: 8091
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8091)
+              .serveHTTP(new Message({status: 403}, 'Access denied'))
+EOF
+
+#等待依赖的 POD 正常启动
+sleep 3
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
+```
+
+##### 5.5.20.6 测试指令
+
+```bash
+kubecm switch kind-cluster2
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy:8080/
+```
+
+##### 5.5.20.7 测试结果
 
 正确返回结果类似于:
 
