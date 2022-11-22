@@ -50,7 +50,7 @@ curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/osm
 chmod u+x deploy-fsm-control-plane.sh
 
 export FSM_NAMESPACE=flomesh
-export FSM_VERSION=0.2.0-alpha.4-dev
+export FSM_VERSION=0.2.0-alpha.5-dev
 export FSM_CHART=charts/fsm
 
 KIND_CLUSTER_NAME=control-plane ./deploy-fsm-control-plane.sh
