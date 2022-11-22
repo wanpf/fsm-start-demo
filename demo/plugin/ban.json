@@ -2,7 +2,7 @@
   "black": [],
   "white": [
     {
-      "name": "E-SCHOOL",
+      "name": "httpbin.org",
       "excludedPaths": []
     }
   ]
