@@ -70,11 +70,14 @@ curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/p
 curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/plugin/print-http-headers.js -o print-http-headers.js
 curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/plugin/print-data-size.js -o print-data-size.js
 
+kubectl create namespace test
+osm namespace add test
+
 kubectl apply -f - <<EOF
 kind: PlugIn
 apiVersion: policy.openservicemesh.io/v1alpha1
 metadata:
-  name: HeaderFilter
+  name: header-filter
   namespace: test
 spec:
   mountPoint:
@@ -98,7 +101,7 @@ kubectl apply -f - <<EOF
 kind: PlugIn
 apiVersion: policy.openservicemesh.io/v1alpha1
 metadata:
-  name: TcpTraffic
+  name: tcp-traffic
   namespace: test
 spec:
   mountPoint:
@@ -115,12 +118,13 @@ spec:
 `cat print-data-size.js |sed 's/^/      /g'`
 EOF
 
-rm -rf ban.json
-rm -rf ban.js
+rm -rf domain.json
+rm -rf print-http-headers.js
+rm -rf print-data-size.js
 
 kubectl get plugin -A
-kubectl get plugin -n test HeaderFilter -o yaml
-kubectl get plugin -n test TcpTraffic -o yaml
+kubectl get plugin -n test header-filter -o yaml
+kubectl get plugin -n test tcp-traffic -o yaml
 ```
 
 #### 3.3.4 测试指令
@@ -148,7 +152,8 @@ Access-Control-Allow-Credentials: true
 #### 3.3.6 删除插件策略
 
 ```bash
-kubectl delete plugin -n curl ban
+kubectl delete plugin -n test header-filter
+kubectl delete plugin -n test tcp-traffic
 ```
 
 #### 3.3.7 测试指令
