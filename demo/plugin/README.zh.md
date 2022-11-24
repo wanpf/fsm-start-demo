@@ -66,37 +66,61 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 
 ```bash
 export osm_namespace=osm-system
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/plugin/ban.json -o ban.json
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/plugin/ban.js -o ban.js
+curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/plugin/domain.json -o domain.json
+curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/plugin/print-http-headers.js -o print-http-headers.js
+curl -L https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/plugin/print-data-size.js -o print-data-size.js
 
 kubectl apply -f - <<EOF
 kind: PlugIn
 apiVersion: policy.openservicemesh.io/v1alpha1
 metadata:
-  name: ban
-  namespace: curl
+  name: HeaderFilter
+  namespace: test
 spec:
   mountPoint:
-    phase: OUTBOUND_XXX
+    phase: INBOUND_HTTP_AFTER_ROUTING
     priority: 1
     targets:
       - kind: Service
         name: curl
         namespace: curl
+  entry: print-http-headers.js
   resources:
-  - name: ban.json
+  - name: domain.json
     content: |+
-`cat ban.json | jq | sed 's/^/      /g'`
-  - name: ban.js
+`cat domain.json | jq | sed 's/^/      /g'`
+  - name: print-http-headers.js
     content: |+
-`cat ban.js |sed 's/^/      /g'`
+`cat print-http-headers.js |sed 's/^/      /g'`
+EOF
+
+kubectl apply -f - <<EOF
+kind: PlugIn
+apiVersion: policy.openservicemesh.io/v1alpha1
+metadata:
+  name: TcpTraffic
+  namespace: test
+spec:
+  mountPoint:
+    phase: OUTBOUND_TCP_AFTER_ROUTING
+    priority: 1
+    targets:
+      - kind: Service
+        name: curl
+        namespace: curl
+  entry: print-data-size.js
+  resources:
+  - name: print-data-size.js
+    content: |+
+`cat print-data-size.js |sed 's/^/      /g'`
 EOF
 
 rm -rf ban.json
 rm -rf ban.js
 
 kubectl get plugin -A
-kubectl get plugin -n curl ban -o yaml
+kubectl get plugin -n test HeaderFilter -o yaml
+kubectl get plugin -n test TcpTraffic -o yaml
 ```
 
 #### 3.3.4 测试指令

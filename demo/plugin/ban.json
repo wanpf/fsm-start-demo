@@ -1,9 +1,0 @@
-{
-  "black": [],
-  "white": [
-    {
-      "name": "httpbin.org",
-      "excludedPaths": []
-    }
-  ]
-}
