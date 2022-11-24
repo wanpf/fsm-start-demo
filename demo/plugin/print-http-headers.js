@@ -26,4 +26,4 @@
       )
     )
 
-))(JSON.decode(pipy.load('plugins/test/HeaderFilter/domain.json')))
+))(JSON.decode(pipy.load('plugins/test/header-filter/domain.json')))
