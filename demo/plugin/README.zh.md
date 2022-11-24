@@ -81,7 +81,7 @@ metadata:
   namespace: test
 spec:
   mountPoint:
-    phase: INBOUND_HTTP_AFTER_ROUTING
+    phase: OUTBOUND_HTTP_AFTER_ROUTING
     priority: 1
     targets:
       - kind: Service
@@ -140,7 +140,7 @@ kubectl exec ${curl_client} -n curl -c curl -- curl -sI httpbin.org
 
 ```bash
 HTTP/1.1 200 OK
-Date: Tue, 22 Nov 2022 01:13:13 GMT
+Date: Thu, 24 Nov 2022 14:24:59 GMT
 Content-Type: text/html; charset=utf-8
 Content-Length: 9593
 Connection: keep-alive
@@ -148,31 +148,49 @@ Server: gunicorn/19.9.0
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
 ```
+#### 3.4.6 查看pod日志命令
+```bash
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl logs pod/${curl_client} -n curl -c sidecar | grep "Chains\|->\|TcpTraffic"
+```
+
+#### 3.4.7 pod 日志记录
+```bash
+2022-11-24 14:15:16.398 [INF] inboundL7Chains:
+                              ->[inbound-tls-termination.js]
+                              ->[inbound-demux-http.js]
+                              ->[inbound-http-routing.js]
+                              ->[metrics-http.js]
+                              ->[inbound-throttle.js]
+                              ->[inbound-mux-http.js]
+                              ->[metrics-tcp.js]
+                              ->[inbound-proxy-tcp.js]
+2022-11-24 14:15:16.398 [INF] inboundL4Chains:
+                              ->[inbound-tls-termination.js]
+                              ->[inbound-tcp-load-balance.js]
+                              ->[metrics-tcp.js]
+                              ->[inbound-proxy-tcp.js]
+2022-11-24 14:15:16.398 [INF] outboundL7Chains:
+                              ->[outbound-demux-http.js]
+                              ->[outbound-http-routing.js]
+                              ->[metrics-http.js]
+                              ->[outbound-breaker.js]
+                              ->[plugins/test/header-filter/print-http-headers.js]
+                              ->[outbound-mux-http.js]
+                              ->[metrics-tcp.js]
+                              ->[outbound-proxy-tcp.js]
+2022-11-24 14:15:16.398 [INF] outboundL4Chains:
+                              ->[outbound-tcp-load-balance.js]
+                              ->[metrics-tcp.js]
+                              ->[plugins/test/tcp-traffic/print-data-size.js]
+                              ->[outbound-proxy-tcp.js]
+2022-11-24 14:15:19.671 [INF] ==============[TcpTraffic] send data size: 80
+2022-11-24 14:15:20.276 [INF] ==============[TcpTraffic] receive data size: 239
+```
 
 #### 3.3.6 删除插件策略
 
 ```bash
 kubectl delete plugin -n test header-filter
 kubectl delete plugin -n test tcp-traffic
-```
-
-#### 3.3.7 测试指令
-
-```bash
-curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n curl -c curl -- curl -sI httpbin.org
-```
-
-#### 3.3.8 测试结果
-
-正确返回结果类似于:
-
-```bash
-待补充
-```
-
-本业务场景测试完毕，清理策略，以避免影响后续测试
-
-```bash
-kubectl delete plugin -n curl ban
 ```
