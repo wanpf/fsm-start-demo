@@ -6,7 +6,7 @@
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
 release=v1.3.0-alpha.3
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -26,6 +26,7 @@ osm install \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
+    --set=osm.enableEgress=false \
     --set=osm.enablePermissiveTrafficPolicy=false \
     --timeout=900s
 ```
