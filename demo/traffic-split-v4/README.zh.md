@@ -174,6 +174,20 @@ spec:
   - service: pipy-ok-v2
     weight: 75
 EOF
+
+cat <<EOF | kubectl apply -n pipy -f -
+apiVersion: split.smi-spec.io/v1alpha4
+kind: TrafficSplit
+metadata:
+  name: pipy-ok-split-1
+spec:
+  service: pipy-ok
+  backends:
+  - service: pipy-ok-v1
+    weight: 50
+  - service: pipy-ok-v2
+    weight: 50
+EOF
 ```
 
 #### 3.2.4 测试指令
@@ -227,6 +241,8 @@ Hi, I am v2!
 
 #### 3.2.6 测试指令
 
+连续执行四次:
+
 ```bash
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec "$curl_client" -n curl -c curl -- curl -si pipy-ok.pipy:8080/demo
@@ -237,10 +253,36 @@ kubectl exec "$curl_client" -n curl -c curl -- curl -si pipy-ok.pipy:8080/demo
 正确返回结果类似于:
 
 ```bash
-应该服务拒绝或 404,但当前返回
 HTTP/1.1 200 OK
-content-length: 0
+server: pipy
+x-pipy-upstream-service-time: 4
+content-length: 12
 connection: keep-alive
+
+Hi, I am v2!
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 4
+content-length: 12
+connection: keep-alive
+
+Hi, I am v1!
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 4
+content-length: 12
+connection: keep-alive
+
+Hi, I am v2!
+
+HTTP/1.1 200 OK
+server: pipy
+x-pipy-upstream-service-time: 4
+content-length: 12
+connection: keep-alive
+
+Hi, I am v1!
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -248,6 +290,7 @@ connection: keep-alive
 ```bash
 kubectl get trafficsplits.split.smi-spec.io -A
 kubectl delete trafficsplits.split.smi-spec.io -n pipy pipy-ok-split
+kubectl delete trafficsplits.split.smi-spec.io -n pipy pipy-ok-split-1
 kubectl get traffictargets.access.smi-spec.io -A
 kubectl delete traffictargets.access.smi-spec.io -n pipy curl-access-pipy-ok-v1-all-routes
 kubectl delete traffictargets.access.smi-spec.io -n pipy curl-access-pipy-ok-v2-all-routes
