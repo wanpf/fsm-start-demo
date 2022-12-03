@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: curl
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: curl
+  labels:
+    app: curl
+    service: curl
+spec:
+  ports:
+    - name: http
+      port: 80
+  selector:
+    app: curl
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl
+  template:
+    metadata:
+      labels:
+        app: curl
+    spec:
+      serviceAccountName: curl
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+      - image: cybwan/curl
+        imagePullPolicy: IfNotPresent
+        name: curl
+        command: ["sleep", "365d"]
