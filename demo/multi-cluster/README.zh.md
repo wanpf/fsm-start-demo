@@ -5,7 +5,7 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0-alpha.1
+release=v1.3.0-alpha.2
 curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
@@ -50,7 +50,7 @@ curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/osm
 chmod u+x deploy-fsm-control-plane.sh
 
 export FSM_NAMESPACE=flomesh
-export FSM_VERSION=0.2.0-alpha.5-dev
+export FSM_VERSION=0.2.0-alpha.10
 export FSM_CHART=charts/fsm
 
 KIND_CLUSTER_NAME=control-plane ./deploy-fsm-control-plane.sh
@@ -2315,7 +2315,7 @@ metadata:
   namespace: pipy
   name: pipy-ok-c1
 spec:
-  lbType: FailOver
+  lbType: Locality
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
@@ -2323,7 +2323,7 @@ metadata:
   namespace: pipy
   name: pipy-ok
 spec:
-  lbType: Locality
+  lbType: FailOver
 EOF
 
 kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
