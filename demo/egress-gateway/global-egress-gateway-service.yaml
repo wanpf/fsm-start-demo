@@ -5,6 +5,8 @@ metadata:
   namespace: egress-gateway
   labels:
     app: global-egress-gateway
+  annotations:
+    openservicemesh.io/egress-gateway-mode: sock5
 spec:
   ports:
     - port: 1080
@@ -12,3 +14,4 @@ spec:
       appProtocol: tcp
   selector:
     app: global-egress-gateway
+    mode: sock5
