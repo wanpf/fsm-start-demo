@@ -5,7 +5,7 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0-alpha.1
+release=v1.3.0-alpha.2
 curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
@@ -50,7 +50,7 @@ curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/osm
 chmod u+x deploy-fsm-control-plane.sh
 
 export FSM_NAMESPACE=flomesh
-export FSM_VERSION=0.2.0-alpha.5-dev
+export FSM_VERSION=0.2.0-alpha.10
 export FSM_CHART=charts/fsm
 
 KIND_CLUSTER_NAME=control-plane ./deploy-fsm-control-plane.sh
@@ -59,7 +59,7 @@ KIND_CLUSTER_NAME=cluster2 ./deploy-fsm-control-plane.sh
 KIND_CLUSTER_NAME=cluster3 ./deploy-fsm-control-plane.sh
 ```
 
-### 3.4 集群 cluster1 加入多集群纳管
+### 3.4 集群 1 加入多集群纳管
 
 ```bash
 kubecm switch kind-control-plane
@@ -76,7 +76,7 @@ spec:
 EOF
 ```
 
-### 3.5 集群 cluster2 加入多集群纳管
+### 3.5 集群 2 加入多集群纳管
 
 ```bash
 kubecm switch kind-control-plane
@@ -93,7 +93,7 @@ spec:
 EOF
 ```
 
-### 3.6 集群 cluster3 加入多集群纳管
+### 3.6 集群 3 加入多集群纳管
 
 ```bash
 kubecm switch kind-control-plane
@@ -112,7 +112,7 @@ EOF
 
 ## 4. 安装 osm-edge
 
-### 4.1 集群 Cluster1 安装 osm-edge
+### 4.1 集群 1 安装 osm-edge
 
 ```bash
 kubecm switch kind-cluster1
@@ -133,7 +133,7 @@ osm install \
     --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
 ```
 
-### 4.2 集群 Cluster2 安装 osm-edge
+### 4.2 集群 2 安装 osm-edge
 
 ```bash
 kubecm switch kind-cluster2
@@ -154,7 +154,7 @@ osm install \
     --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
 ```
 
-### 4.3 集群 Cluster3 安装 osm-edge
+### 4.3 集群 3 安装 osm-edge
 
 ```bash
 kubecm switch kind-cluster3
@@ -179,7 +179,7 @@ osm install \
 
 ### 5.1 部署模拟业务服务
 
-#### 5.1.1 集群 cluster1 部署不被 osm edge 纳管的业务服务
+#### 5.1.1 集群 1 部署不被 osm edge 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -191,7 +191,7 @@ sleep 3
 kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok-c1 --timeout=180s
 ```
 
-#### 5.1.2 集群 cluster1 部署被 osm edge 纳管的业务服务
+#### 5.1.2 集群 1 部署被 osm edge 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -204,7 +204,7 @@ sleep 3
 kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok-c1 --timeout=180s
 ```
 
-#### 5.1.3 集群 cluster1 导出任意 SA 业务服务
+#### 5.1.3 集群 1 导出任意 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -266,7 +266,7 @@ curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
-#### 5.1.4 集群 cluster3 部署不被 osm edge 纳管的业务服务
+#### 5.1.4 集群 3 部署不被 osm edge 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster3
@@ -278,7 +278,7 @@ sleep 3
 kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok-c3 --timeout=180s
 ```
 
-#### 5.1.5 集群 cluster3 部署被 osm edge 纳管的业务服务
+#### 5.1.5 集群 3 部署被 osm edge 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster3
@@ -291,7 +291,7 @@ sleep 3
 kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok-c3 --timeout=180s
 ```
 
-#### 5.1.6 集群 cluster3 导出任意 SA 业务服务
+#### 5.1.6 集群 3 导出任意 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster3
@@ -353,7 +353,7 @@ curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
 curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
 ```
 
-#### 5.1.7 集群 cluster2 导入业务服务
+#### 5.1.7 集群 2 导入业务服务
 
 ```bash
 kubecm switch kind-cluster2
@@ -369,7 +369,7 @@ kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok-c1 -o yaml
 kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok-c3 -o yaml
 ```
 
-#### 5.1.8 集群 cluster2 部署被 osm edge 纳管的客户端
+#### 5.1.8 集群 2 部署被 osm edge 纳管的客户端
 
 ```bash
 kubecm switch kind-cluster2
@@ -1493,7 +1493,7 @@ command terminated with exit code 7
 
 #### 5.5.14 场景测试四-1: 导出服务任意 SA 测试
 
-##### 5.5.14.1 集群 cluster1 导出任意 SA 业务服务
+##### 5.5.14.1 集群 1 导出任意 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -1555,7 +1555,7 @@ curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
-##### 5.5.14.2 集群 cluster3 导出任意 SA 业务服务
+##### 5.5.14.2 集群 3 导出任意 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster3
@@ -1718,7 +1718,7 @@ Hi, I am from Cluster3 and controlled by OSM !
 
 #### 5.5.15 场景测试四-2: 导出服务无 SA 测试
 
-##### 5.5.15.1 集群 cluster1 导出无 SA 业务服务
+##### 5.5.15.1 集群 1 导出无 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -1776,7 +1776,7 @@ curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
-##### 5.5.15.2 集群 cluster3 导出无 SA 业务服务
+##### 5.5.15.2 集群 3 导出无 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster3
@@ -1903,7 +1903,7 @@ command terminated with exit code 7
 
 #### 5.5.16 场景测试四-3: 导出服务特定 SA 测试
 
-##### 5.5.16.1 集群 cluster1 导出特定 SA 业务服务
+##### 5.5.16.1 集群 1 导出特定 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster1
@@ -1965,7 +1965,7 @@ curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
 ```
 
-##### 5.5.16.2 集群 cluster3 导出特定 SA 业务服务
+##### 5.5.16.2 集群 3 导出特定 SA 业务服务
 
 ```bash
 kubecm switch kind-cluster3
@@ -2315,7 +2315,7 @@ metadata:
   namespace: pipy
   name: pipy-ok-c1
 spec:
-  lbType: FailOver
+  lbType: Locality
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
@@ -2323,7 +2323,7 @@ metadata:
   namespace: pipy
   name: pipy-ok
 spec:
-  lbType: Locality
+  lbType: FailOver
 EOF
 
 kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml

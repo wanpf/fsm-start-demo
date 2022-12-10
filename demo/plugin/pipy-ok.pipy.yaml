@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipy-ok-v1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipy-ok-v2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: pipy-ok
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok-v1
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: pipy-ok
+    version: v1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipy-ok-v2
+spec:
+  ports:
+    - name: pipy
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: pipy-ok
+    version: v2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok-v1
+  labels:
+    app: pipy-ok
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+        version: v1
+    spec:
+      serviceAccountName: pipy-ok-v1
+      containers:
+        - name: pipy
+          image: localhost:5000/flomesh/pipy-nightly:latest
+          ports:
+            - name: pipy
+              containerPort: 8080
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8080)
+              .serveHTTP(new Message('Hi, I am PIPY-OK v1!'))
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipy-ok-v2
+  labels:
+    app: pipy-ok
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipy-ok
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: pipy-ok
+        version: v2
+    spec:
+      serviceAccountName: pipy-ok-v2
+      containers:
+        - name: pipy
+          image: localhost:5000/flomesh/pipy-nightly:latest
+          ports:
+            - name: pipy
+              containerPort: 8080
+          command:
+            - pipy
+            - -e
+            - |
+              pipy()
+              .listen(8080)
+              .serveHTTP(new Message('Hi, I am PIPY-OK v2!'))

@@ -5,17 +5,20 @@ metadata:
   namespace: egress-gateway
   labels:
     app: global-egress-gateway
+    mode: sock5
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: global-egress-gateway
+      mode: sock5
   strategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
         app: global-egress-gateway
+        mode: sock5
       annotations:
         prometheus.io/path: '/stats/prometheus'
         prometheus.io/port: '15010'
