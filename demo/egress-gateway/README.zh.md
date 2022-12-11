@@ -314,7 +314,7 @@ X-Cache-Hits: 0
 
 ```bash
 #日志会有延迟(最大15秒)
-kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep edition.cnn.com | jq
+kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep 'host":"httpbin.org' | jq
 #流量日志返回
 {
   "connection_id": "b2316fbb5ab14034",
@@ -325,15 +325,6 @@ kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonp
   "path": "/?test=4.5.3",
   "method": "HEAD"
 }
-{
-  "id": "b2316fbb5ab14034",
-  "start_time": "2022-09-17T11:51:33.074Z",
-  "source_address": "10.244.1.6",
-  "source_port": 42316,
-  "destination_address": "edition.cnn.com",
-  "destination_port": 80,
-  "end_time": "2022-09-17T11:51:33.603Z"
-}
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -342,7 +333,7 @@ kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonp
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
-kubectl delete egressgateways -n fsm global-egress-gateway
+kubectl delete egressgateways -n curl global-egress-gateway
 ```
 
 ### 3.6 场景测试四：目的策略模式+全局出口代理网关
@@ -424,17 +415,8 @@ connection: keep-alive
 
 ```bash
 #日志会有延迟(最大15秒)
-kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep httpbin.org | jq
+kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep 'host":"httpbin.org' | jq
 #流量日志返回
-{
-  "id": "62445ee7ebeb455e",
-  "start_time": "2022-09-17T11:46:19.920Z",
-  "source_address": "10.244.1.6",
-  "source_port": 47026,
-  "destination_address": "httpbin.org",
-  "destination_port": 80,
-  "end_time": "2022-09-17T11:46:25.686Z"
-}
 {
   "connection_id": "b7afbcab6f284c5c",
   "request_time": "2022-09-17T11:55:20.278Z",
@@ -469,5 +451,5 @@ export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
 kubectl delete egress -n curl httpbin-80
-kubectl delete egressgateways -n fsm global-egress-gateway
+kubectl delete egressgateways -n curl global-egress-gateway
 ```
