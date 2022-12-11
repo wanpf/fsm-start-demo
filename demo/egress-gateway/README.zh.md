@@ -5,8 +5,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.3.0-alpha.5
+curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -21,8 +21,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.2.0 \
+    --set=osm.image.registry=cybwan \
+    --set=osm.image.tag=1.3.0-alpha.5 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enableEgress=false \
     --set=osm.sidecarLogLevel=error \
@@ -43,6 +43,8 @@ osm install \
   - **边车透传**：外部流量经边车直接到外部目标
   - **网关代理**：外部流量经边车送到出口网关后到外部目标
     - **全局出口代理网关**
+      - http2tunnel 默认
+      - Sock5
 
 策略组合，可以满足四种业务场景：
 
@@ -63,20 +65,49 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 
 #### 3.2.2 部署全局出口代理网关
 
+##### 3.2.2.1 编译 fsm
+
 ```bash
-#忽略可能的重复创建 namespace 错误
-kubectl create namespace egress-gateway
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-rbac.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-service.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-configmap.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-deployment.yaml
+git clone -b v1.2-egress-gateway https://github.com/cybwan/fsm.git
+cd fsm
+make dev
 ```
+
+##### 3.2.2.2 部署 http2tunnel 模式 Egress Gateway
+
+```bash
+helm uninstall --namespace fsm fsm
+
+helm install --namespace fsm --create-namespace \
+--set fsm.version=0.2.0-alpha.10 \
+--set fsm.logLevel=5 \
+--set fsm.egressGateway.enabled=true \
+--set fsm.egressGateway.mode=http2tunnel \
+--set fsm.egressGateway.logLevel=debug \
+fsm charts/fsm 
+```
+
+##### 3.2.2.3 部署 sock5 模式 Egress Gateway
+
+```bash
+helm uninstall --namespace fsm fsm
+
+helm install --namespace fsm --create-namespace \
+--set fsm.version=0.2.0-alpha.10 \
+--set fsm.logLevel=5 \
+--set fsm.egressGateway.enabled=true \
+--set fsm.egressGateway.mode=sock5 \
+--set fsm.egressGateway.logLevel=debug \
+fsm charts/fsm 
+```
+
+**http2tunnel 和 sock5 任选其一部署**
 
 #### 3.2.3 等待依赖的 POD 正常启动
 
 ```bash
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
-kubectl wait --for=condition=ready pod -n egress-gateway -l app=global-egress-gateway --timeout=180s
+kubectl wait --for=condition=ready pod -n fsm -l app=fsm-egress-gateway --timeout=180s
 ```
 
 ### 3.3 场景测试一：目的宽松模式+边车透传
@@ -99,7 +130,7 @@ kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metada
 正确返回结果:
 
 ```bash
-command terminated with exit code 52
+command terminated with exit code 7
 ```
 
 #### 3.3.4  启用Egress目的宽松模式
@@ -157,7 +188,7 @@ kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metada
 正确返回结果:
 
 ```bash
-command terminated with exit code 52
+command terminated with exit code 7
 ```
 
 #### 3.4.4 设置Egress目的策略
@@ -245,8 +276,8 @@ metadata:
   namespace: curl
 spec:
   global:
-    - service: global-egress-gateway
-      namespace: egress-gateway
+    - service: fsm-egress-gateway
+      namespace: fsm
 EOF
 ```
 
@@ -283,7 +314,7 @@ X-Cache-Hits: 0
 
 ```bash
 #日志会有延迟(最大15秒)
-kubectl logs -n egress-gateway "$(kubectl get pod -n egress-gateway -l app=global-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep edition.cnn.com | jq
+kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep edition.cnn.com | jq
 #流量日志返回
 {
   "connection_id": "b2316fbb5ab14034",
@@ -311,7 +342,7 @@ kubectl logs -n egress-gateway "$(kubectl get pod -n egress-gateway -l app=globa
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
-kubectl delete egressgateways -n egress-gateway global-egress-gateway
+kubectl delete egressgateways -n fsm global-egress-gateway
 ```
 
 ### 3.6 场景测试四：目的策略模式+全局出口代理网关
@@ -363,8 +394,8 @@ metadata:
   namespace: curl
 spec:
   global:
-    - service: global-egress-gateway
-      namespace: egress-gateway
+    - service: fsm-egress-gateway
+      namespace: fsm
 EOF
 ```
 
@@ -393,7 +424,7 @@ connection: keep-alive
 
 ```bash
 #日志会有延迟(最大15秒)
-kubectl logs -n egress-gateway "$(kubectl get pod -n egress-gateway -l app=global-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep httpbin.org | jq
+kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep httpbin.org | jq
 #流量日志返回
 {
   "id": "62445ee7ebeb455e",
@@ -438,5 +469,5 @@ export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
 kubectl delete egress -n curl httpbin-80
-kubectl delete egressgateways -n egress-gateway global-egress-gateway
+kubectl delete egressgateways -n fsm global-egress-gateway
 ```
