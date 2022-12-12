@@ -314,7 +314,7 @@ X-Cache-Hits: 0
 
 ```bash
 #日志会有延迟(最大15秒)
-kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep 'host":"httpbin.org' | jq
+kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonpath='{.items..metadata.name}')" | grep 'host":"edition.cnn.com' | jq
 #流量日志返回
 {
   "connection_id": "b2316fbb5ab14034",
