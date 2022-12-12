@@ -35,7 +35,7 @@ osm install \
 git clone -b feature/support-mtls-between-ingress-controller-and-backend-services https://github.com/flomesh-io/fsm.git
 cd fsm
 make dev
-helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.11-dev --set fsm.logLevel=5 --set fsm.image.pullPolicy=Always fsm charts/fsm/
+helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.12-dev --set fsm.logLevel=5 --set fsm.image.pullPolicy=Always fsm charts/fsm/
 
 kubectl wait --namespace flomesh \
   --for=condition=ready pod \
@@ -95,13 +95,13 @@ kubectl wait --for=condition=ready pod -n egress-middle -l app=middle --timeout=
 kubectl wait --for=condition=ready pod -n egress-client -l app=client --timeout=180s
 ```
 
-### 4.3 场景测试一：HTTP Nginx & HTTP Ingress & mTLS Egress
+### 4.3 场景测试一：Client HTTP & HTTP Ingress & mTLS Egress
 
 #### 4.3.1 测试指令
 
 流量路径: 
 
-Client --**http**--> Nginx Ingress Controller
+Client --**http**--> ingress-pipy Controller
 
 ```bash
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://fsm-ingress-pipy-controller.flomesh/hello
@@ -339,36 +339,6 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p \
 #### 4.4.4 设置 Ingress 策略
 
 ```bash
-kubectl apply -f - <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: osm-secret-readonly-role
-  namespace: osm-system
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - get
-      - list
-      - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: osm-secret-readonly-rolebinding
-  namespace: osm-system
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: osm-secret-readonly-role
-subjects:
-  - kind: ServiceAccount
-    name: fsm
-    namespace: flomesh
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -424,7 +394,7 @@ EOF
 
 流量路径: 
 
-Client --**http**--> Nginx Ingress --**mtls** --> sidecar --> Middle
+Client --**http**--> ingress-pipy --**mtls** --> sidecar --> Middle
 
 ```bash
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://fsm-ingress-pipy-controller.flomesh/hello
@@ -509,7 +479,7 @@ EOF
 
 流量路径: 
 
-Client --**http**--> Nginx Ingress --**mtls**--> sidecar --> Middle --> sidecar --**egress mtls**--> Server
+Client --**http**--> ingress-pipy --**mtls**--> sidecar --> Middle --> sidecar --**egress mtls**--> Server
 
 ```bash
 kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -si http://fsm-ingress-pipy-controller.flomesh/time
