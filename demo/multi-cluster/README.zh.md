@@ -124,7 +124,7 @@ osm install \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.3.0-alpha.1 \
+    --set=osm.image.tag=1.3.0-alpha.5 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -145,7 +145,7 @@ osm install \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.3.0-alpha.1 \
+    --set=osm.image.tag=1.3.0-alpha.5 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -166,7 +166,7 @@ osm install \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.3.0-alpha.1 \
+    --set=osm.image.tag=1.3.0-alpha.5 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -899,7 +899,7 @@ Hi, I am from Cluster2 !
 ```bash
 kubecm switch kind-cluster2
 
-cat <<EOF | kubectl apply -f -
+cat <<EOF | sudo kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
