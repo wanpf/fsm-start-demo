@@ -71,7 +71,7 @@ spec:
       serviceAccountName: pipy-ok-v1
       containers:
         - name: pipy
-          image: localhost:5000/flomesh/pipy-nightly:latest
+          image: flomesh/pipy:latest
           ports:
             - name: pipy
               containerPort: 8080
@@ -105,7 +105,7 @@ spec:
       serviceAccountName: pipy-ok-v2
       containers:
         - name: pipy
-          image: localhost:5000/flomesh/pipy-nightly:latest
+          image: flomesh/pipy:latest
           ports:
             - name: pipy
               containerPort: 8080
