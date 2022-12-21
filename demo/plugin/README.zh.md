@@ -204,13 +204,13 @@ metadata:
   name: token-injector-config-1
   namespace: curl
 spec:
-  config:
-    AccessToken: '123456'
   plugin: token-injector-1
   destinationRefs:
     - kind: Service
       name: pipy-ok-v1
       namespace: pipy
+  config:
+    AccessToken: '123456'
 EOF
 
 kubectl apply -n pipy -f - <<EOF
@@ -220,13 +220,13 @@ metadata:
   name: token-verifier-config-1
   namespace: pipy
 spec:
-  config:
-    AccessToken: '123456'
   plugin: token-verifier-1
   destinationRefs:
     - kind: Service
       name: pipy-ok-v1
       namespace: pipy
+  config:
+    AccessToken: '123456'
 EOF
 ```
 
