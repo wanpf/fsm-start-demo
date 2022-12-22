@@ -21,6 +21,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.2.2 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -90,6 +92,8 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"sidec
 
 ```bash
 kubectl rollout restart deployment -n curl curl
+
+#等待依赖的 POD 正常启动
 ```
 
 #### 3.3.4 查看当前边车容器的资源限定
@@ -122,6 +126,8 @@ kubectl patch namespace curl -p '{"metadata":{"annotations":{"openservicemesh.io
 
 ```bash
 kubectl rollout restart deployment -n curl curl
+
+#等待依赖的 POD 正常启动
 ```
 
 #### 3.3.7 查看当前边车容器的资源限定
