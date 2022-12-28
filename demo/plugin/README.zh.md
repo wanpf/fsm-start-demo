@@ -24,7 +24,7 @@ osm install \
     --set=osm.image.registry=cybwan \
     --set=osm.image.tag=1.3.0-alpha.6 \
     --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=warn \
+    --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
     --timeout=900s
 ```
@@ -62,6 +62,7 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 #### 3.2.2 声明插件
 
 ```bash
+
 kubectl apply -f - <<EOF
 kind: Plugin
 apiVersion: plugin.flomesh.io/v1alpha1
@@ -72,35 +73,33 @@ spec:
   pipyscript: |+
     (
     pipy({
-      _pluginName: '',
-      _pluginConfig: null,
-      _accessToken: null,
-      _valid: false,
+        _pluginName: '',
+        _pluginConfig: null,
+        _accessToken: null,
+        _valid: false,
     })
-
     .import({
-        __port: 'inbound-main',
+        __plugins: 'inbound',
     })
-
     .pipeline()
     .onStart(
-    () => void (
-        _pluginName = __filename.slice(9, -3),
-        _pluginConfig = __port?.Plugins?.[_pluginName],
-        _accessToken = _pluginConfig?.AccessToken
-    )
-    )
-    .handleMessageStart(
-        msg => (msg.head.headers['accesstoken'] === _accessToken) && (_valid = true)
-    )
-    .branch(
-      () => _valid, (
-        $ => $.chain()
-    ), (
-        $ => $.replaceMessage(
-        new Message({ status: 403 }, 'token verify failed')
+        () => void (
+            _pluginName = __filename.slice(9, -3),
+            _pluginConfig = __plugins?.[_pluginName],
+            _accessToken = _pluginConfig?.AccessToken
         )
     )
+    .handleMessageStart(
+        msg => _valid = (_accessToken && msg.head.headers['accesstoken'] === _accessToken)
+    )
+    .branch(
+        () => _valid, (
+            $ => $.chain()
+        ), (
+            $ => $.replaceMessage(
+            new Message({ status: 403 }, 'token verify failed')
+            )
+        )
     )
     )
 EOF
@@ -121,14 +120,14 @@ spec:
     })
 
     .import({
-        __port: 'outbound-main',
+        __plugins: 'outbound',
     })
 
     .pipeline()
     .onStart(
         () => void (
             _pluginName = __filename.slice(9, -3),
-            _pluginConfig = __port?.Plugins?.[_pluginName],
+            _pluginConfig = __plugins?.[_pluginName],
             _accessToken = _pluginConfig?.AccessToken
         )
     )
@@ -138,6 +137,7 @@ spec:
     .chain()
     )
 EOF
+
 ```
 
 #### 3.2.3 设置插件链
@@ -204,13 +204,13 @@ metadata:
   name: token-injector-config-1
   namespace: curl
 spec:
+  config:
+    AccessToken: '123456'
   plugin: token-injector-1
   destinationRefs:
     - kind: Service
       name: pipy-ok-v1
       namespace: pipy
-  config:
-    AccessToken: '123456'
 EOF
 
 kubectl apply -n pipy -f - <<EOF
@@ -220,13 +220,13 @@ metadata:
   name: token-verifier-config-1
   namespace: pipy
 spec:
+  config:
+    AccessToken: '123456'
   plugin: token-verifier-1
   destinationRefs:
     - kind: Service
       name: pipy-ok-v1
       namespace: pipy
-  config:
-    AccessToken: '123456'
 EOF
 ```
 
@@ -240,34 +240,30 @@ osm proxy get config_dump -n curl "$curl_client" | jq
 ## 4. 测试 
 ### 4.1 访问 http://pipy-ok.pipy:8080  
 ```bash
+
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
 
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
+
 ```
 结果：  
 1、访问 V1 失败  
-
-```
 HTTP/1.1 403 Forbidden  
 content-length: 19  
 connection: keep-alive  
 
-token verify failed
-```
+token verify failed  
 
 2、访问 V2 成功  
-
-```
 HTTP/1.1 200 OK  
 osm-stats: pipy,Deployment,pipy-ok-v2,pipy-ok-v2-cf87cc878-7jpnf  
 content-length: 20  
 connection: keep-alive  
 
-Hi, I am PIPY-OK v2! 
-```
+Hi, I am PIPY-OK v2!  
 
 ### 4.2 访问 http://pipy-ok-v1.pipy:8080  
 ```bash
@@ -275,18 +271,16 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok-v1.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok-v1.pipy:8080
+
 ```
 结果：  
 访问 V1 成功   
-
-```
 HTTP/1.1 200 OK  
 osm-stats: pipy,Deployment,pipy-ok-v1,pipy-ok-v1-7645cf6d5d-xk4mv  
 content-length: 20  
 connection: keep-alive  
 
 Hi, I am PIPY-OK v1!  
-```
 
 ### 4.3 访问 http://pipy-ok-v2.pipy:8080  
 ```bash
@@ -297,13 +291,10 @@ kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok-v2.pipy:
 ```
 结果：  
 访问 V2 成功  
-
-```
 HTTP/1.1 200 OK  
 osm-stats: pipy,Deployment,pipy-ok-v2,pipy-ok-v2-cf87cc878-7jpnf  
 content-length: 20  
 connection: keep-alive  
 
 Hi, I am PIPY-OK v2!  
-```
 
