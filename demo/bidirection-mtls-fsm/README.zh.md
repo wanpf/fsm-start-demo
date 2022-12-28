@@ -32,10 +32,9 @@ osm install \
 ## 3. 安装 FSM
 
 ```bash
-git clone -b feature/support-mtls-between-ingress-controller-and-backend-services https://github.com/flomesh-io/fsm.git
-cd fsm
-make dev
-helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.12-dev --set fsm.logLevel=5 --set fsm.image.pullPolicy=Always fsm charts/fsm/
+helm repo add fsm https://charts.flomesh.io
+helm install --namespace flomesh --create-namespace --version=0.2.0-alpha.13 -f https://raw.githubusercontent.com/flomesh-io/fsm/release-v0.2/samples/mTLS-ingress/values.yaml fsm fsm/fsm
+
 
 kubectl wait --namespace flomesh \
   --for=condition=ready pod \
@@ -553,21 +552,14 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certi
 ##### 4.5.4.1 创建 ingress-pipy TLS Secret
 
 ```bash
-openssl genrsa 2048 > ca.key
+cd samples/mTLS-ingress
 
-openssl req -new -x509 -nodes -days 365000 \
-   -key ca.key \
-   -out ca.crt \
-   -subj '/CN=flomesh.io'
-
-openssl genrsa -out ingress-pipy.key 2048
-openssl req -new -key ingress-pipy.key -out ingress-pipy.csr -subj '/CN=fsm-ingress-pipy-controller.flomesh'
-openssl x509 -req -in ingress-pipy.csr -CA ca.crt -CAkey ca.key -extfile extfile.cnf -CAcreateserial -out ingress-pipy.crt -days 365
 
 kubectl create secret generic -n egress-middle ingress-pipy-cert-secret \
   --from-file=ca.crt=./ca.crt \
   --from-file=tls.crt=./ingress-pipy.crt \
   --from-file=tls.key=./ingress-pipy.key 
+
 ```
 ##### 4.5.4.2 创建Egress mTLS Secret
 
@@ -641,17 +633,58 @@ spec:
 EOF
 ```
 
-#### 4.5.7 测试指令
+
+#### 4.5.7 替换client端证书
+```shell
+kubectl create secret generic -n egress-client egress-client-secret \
+  --from-file=ca.crt=./ca.crt \
+  --from-file=tls.crt=./client.crt \
+  --from-file=tls.key=./client.key 
+
+kubectl -n egress-client patch deploy client -p \
+  '
+  {
+    "spec": {
+      "template": {
+        "spec": {
+          "containers": [{
+            "name": "client",
+            "volumeMounts": [{
+              "mountPath": "/client",
+              "name": "client-certs"
+            }]
+          }],
+          "volumes": [{
+            "secret": {
+              "secretName": "egress-client-secret"
+            },
+            "name": "client-certs"
+          }]
+        }
+      }
+    }
+  }
+  '
+```
+
+
+#### 4.5.8 fsm禁用inbound mTLS
+
+```shell
+kubectl -n flomesh get cm fsm-mesh-config -o yaml | sed 's/"mTLS": true/"mTLS": false/g' | kubectl apply -f -
+```
+
+#### 4.5.9 测试指令
 
 流量路径: 
 
 Client --**tls**--> Ingress PIPY --**mtls** --> sidecar --> Middle
 
 ```bash
-kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/hello --key /certs/client.key --cert /certs/client.crt
+kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/hello --key /client/tls.key --cert /client/tls.crt
 ```
 
-#### 4.5.8 测试结果
+#### 4.5.10 测试结果
 
 正确返回结果类似于:
 
@@ -668,14 +701,14 @@ content-length: 13
 hello world.
 ```
 
-#### 4.5.9 禁用Egress目的宽松模式
+#### 4.5.11 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.5.10 启用Egress目的策略模式
+#### 4.5.12 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
@@ -683,7 +716,7 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featu
 ```
 
 
-#### 4.5.11 设置Egress目的策略
+#### 4.5.13 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -713,17 +746,18 @@ spec:
 EOF
 ```
 
-#### 4.5.12 测试指令
+
+#### 4.5.14 测试指令
 
 流量路径: 
 
 Client --**tls**-->  Ingress PIPY --**mtls**--> sidecar --> Middle --> sidecar --**egress mtls**--> Server
 
 ```bash
-kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/time --key /certs/client.key --cert /certs/client.crt
+kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/time --key /client/tls.key --cert /client/tls.crt
 ```
 
-#### 4.5.13 测试结果
+#### 4.5.15 测试结果
 
 正确返回结果类似于:
 
@@ -778,7 +812,7 @@ connection: keep-alive
 Service Not Found
 ```
 
-#### 4.4.3 设置 Ingress Controller 证书上下文
+#### 4.6.3 设置 Ingress Controller 证书上下文
 
 ```bash
 export osm_namespace=osm-system
@@ -786,27 +820,56 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certi
 ```
 
 
-#### 4.4.4 创建 ingress-pipy TLS Secret
+#### 4.6.4 创建 ingress-pipy TLS Secret && CA Secret
 
 ```bash
-openssl genrsa 2048 > ca.key
-
-openssl req -new -x509 -nodes -days 365000 \
-   -key ca.key \
-   -out ca.crt \
-   -subj '/CN=flomesh.io'
-
-openssl genrsa -out ingress-pipy.key 2048
-openssl req -new -key ingress-pipy.key -out ingress-pipy.csr -subj '/CN=fsm-ingress-pipy-controller.flomesh'
-openssl x509 -req -in ingress-pipy.csr -CA ca.crt -CAkey ca.key -extfile extfile.cnf -CAcreateserial -out ingress-pipy.crt -days 365
+cd samples/mTLS-ingress
 
 kubectl create secret generic -n egress-middle ingress-pipy-cert-secret \
   --from-file=ca.crt=./ca.crt \
   --from-file=tls.crt=./ingress-pipy.crt \
   --from-file=tls.key=./ingress-pipy.key 
+
+
+kubectl create secret generic -n egress-middle ingress-pipy-ca-secret \
+  --from-file=ca.crt=./ca.crt 
 ```
 
-#### 4.4.6 设置 Ingress 策略
+#### 4.6.5 替换client端证书
+```shell
+kubectl create secret generic -n egress-client egress-client-secret \
+  --from-file=ca.crt=./ca.crt \
+  --from-file=tls.crt=./client.crt \
+  --from-file=tls.key=./client.key 
+
+kubectl -n egress-client patch deploy client -p \
+  '
+  {
+    "spec": {
+      "template": {
+        "spec": {
+          "containers": [{
+            "name": "client",
+            "volumeMounts": [{
+              "mountPath": "/client",
+              "name": "client-certs"
+            }]
+          }],
+          "volumes": [{
+            "secret": {
+              "secretName": "egress-client-secret"
+            },
+            "name": "client-certs"
+          }]
+        }
+      }
+    }
+  }
+  '
+```
+
+
+#### 4.6.6 设置 Ingress 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -816,6 +879,7 @@ metadata:
   name: egress-middle
   namespace: egress-middle
   annotations:
+    pipy.ingress.kubernetes.io/tls-trusted-ca-secret: egress-middle/ingress-pipy-ca-secret
     pipy.ingress.kubernetes.io/tls-verify-client: "on"
     pipy.ingress.kubernetes.io/tls-verify-depth: "1"
 
@@ -842,7 +906,7 @@ spec:
 EOF
 ```
 
-#### 4.4.7 设置 IngressBackend 策略
+#### 4.6.7 设置 IngressBackend 策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -868,17 +932,23 @@ spec:
 EOF
 ```
 
-#### 4.4.8 测试指令
+#### 4.6.8 fsm启用inbound mTLS
+
+```shell
+kubectl -n flomesh get cm fsm-mesh-config -o yaml | sed 's/"mTLS": false/"mTLS": true/g' | kubectl apply -f -
+```
+
+#### 4.6.9 测试指令
 
 流量路径: 
 
 Client --**mtls**--> Ingress PIPY --**mtls** --> sidecar --> Middle
 
 ```bash
-kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/hello  --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
+kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/hello  --cacert /client/ca.crt --key /client/tls.key --cert /client/tls.crt
 ```
 
-#### 4.4.9 测试结果
+#### 4.6.10 测试结果
 
 正确返回结果类似于:
 
@@ -895,21 +965,21 @@ content-length: 13
 hello world.
 ```
 
-#### 4.4.10 禁用Egress目的宽松模式
+#### 4.6.11 禁用Egress目的宽松模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
-#### 4.4.11 启用Egress目的策略模式
+#### 4.6.12 启用Egress目的策略模式
 
 ```bash
 export osm_namespace=osm-system
 kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
-#### 4.4.12 创建Egress mTLS Secret
+#### 4.6.13 创建Egress mTLS Secret
 
 ```bash
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -o ca.crt
@@ -922,7 +992,7 @@ kubectl create secret generic -n osm-system egress-middle-cert \
   --from-file=tls.key=./middle.key 
 ```
 
-#### 4.4.13 设置Egress目的策略
+#### 4.6.14 设置Egress目的策略
 
 ```bash
 kubectl apply -f - <<EOF
@@ -952,17 +1022,17 @@ spec:
 EOF
 ```
 
-#### 4.4.14 测试指令
+#### 4.6.15 测试指令
 
 流量路径: 
 
 Client --**mtls**--> Ingress PIPY --**mtls**--> sidecar --> Middle --> sidecar --**egress mtls**--> Server
 
 ```bash
-kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/time --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt
+kubectl exec "$(kubectl get pod -n egress-client -l app=client -o jsonpath='{.items..metadata.name}')" -n egress-client -- curl -ksi https://fsm-ingress-pipy-controller.flomesh/time --cacert /client/ca.crt --key /client/tls.key --cert /client/tls.crt
 ```
 
-#### 4.4.15 测试结果
+#### 4.6.16 测试结果
 
 正确返回结果类似于:
 
