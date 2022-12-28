@@ -32,10 +32,9 @@ osm install \
 ## 3. 安装 FSM
 
 ```bash
-git clone -b feature/support-mtls-between-ingress-controller-and-backend-services https://github.com/flomesh-io/fsm.git
-cd fsm
-make dev
-helm install --namespace flomesh --create-namespace --set fsm.version=0.2.0-alpha.12-dev --set fsm.logLevel=5 --set fsm.image.pullPolicy=Always fsm charts/fsm/
+helm repo add fsm https://charts.flomesh.io
+helm install --namespace flomesh --create-namespace --version=0.2.0-alpha.13 -f https://raw.githubusercontent.com/flomesh-io/fsm/release-v0.2/samples/mTLS-ingress/values.yaml fsm fsm/fsm
+
 
 kubectl wait --namespace flomesh \
   --for=condition=ready pod \
@@ -824,6 +823,7 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certi
 #### 4.6.4 创建 ingress-pipy TLS Secret && CA Secret
 
 ```bash
+cd samples/mTLS-ingress
 
 kubectl create secret generic -n egress-middle ingress-pipy-cert-secret \
   --from-file=ca.crt=./ca.crt \
