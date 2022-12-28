@@ -24,7 +24,7 @@ osm install \
     --set=osm.image.registry=cybwan \
     --set=osm.image.tag=1.3.0-alpha.6 \
     --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
+    --set=osm.sidecarLogLevel=warn \
     --set=osm.controllerLogLevel=warn \
     --timeout=900s
 ```
