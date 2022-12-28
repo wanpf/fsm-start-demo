@@ -244,7 +244,6 @@ kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:808
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
-
 ```
 结果： 
 1、访问 V1 失败  
