@@ -68,7 +68,7 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 ##### 3.2.2.1 编译 fsm
 
 ```bash
-git clone -b v1.2-egress-gateway https://github.com/cybwan/fsm.git
+git clone https://github.com/flomesh-io/fsm
 cd fsm
 make dev
 ```
@@ -79,7 +79,7 @@ make dev
 helm uninstall --namespace fsm fsm
 
 helm install --namespace fsm --create-namespace \
---set fsm.version=0.2.0-alpha.10 \
+--set fsm.version=0.2.0-alpha.16 \
 --set fsm.logLevel=5 \
 --set fsm.egressGateway.enabled=true \
 --set fsm.egressGateway.mode=http2tunnel \
@@ -93,7 +93,7 @@ fsm charts/fsm
 helm uninstall --namespace fsm fsm
 
 helm install --namespace fsm --create-namespace \
---set fsm.version=0.2.0-alpha.10 \
+--set fsm.version=0.2.0-alpha.16 \
 --set fsm.logLevel=5 \
 --set fsm.egressGateway.enabled=true \
 --set fsm.egressGateway.mode=sock5 \
