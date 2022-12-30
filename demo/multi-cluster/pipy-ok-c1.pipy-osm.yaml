@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: pipy
-          image: flomesh/pipy:0.50.0-146
+          image: flomesh/pipy-nightly:latest
           ports:
             - name: pipy
               containerPort: 8080
