@@ -19,12 +19,11 @@ https://github.com/sunny0826/kubecm/releases
 
 ## 3. 部署多集群环境
 
-### 3.1 编译 FSM 控制平面组件
+### 3.1 安装 FSM 控制平面组件仓库
 
 ```bash
-git clone -b release-v0.2 https://github.com/flomesh-io/fsm.git
-cd fsm
-make dev
+helm repo add fsm https://charts.flomesh.io
+helm repo update
 ```
 
 ### 3.2 部署控制平面集群和两个业务集群
@@ -50,8 +49,8 @@ curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/osm
 chmod u+x deploy-fsm-control-plane.sh
 
 export FSM_NAMESPACE=flomesh
-export FSM_VERSION=0.2.0-alpha.10
-export FSM_CHART=charts/fsm
+export FSM_VERSION=0.2.0-alpha.16
+export FSM_CHART=fsm/fsm
 
 KIND_CLUSTER_NAME=control-plane ./deploy-fsm-control-plane.sh
 KIND_CLUSTER_NAME=cluster1 ./deploy-fsm-control-plane.sh
