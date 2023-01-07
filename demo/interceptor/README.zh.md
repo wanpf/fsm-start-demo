@@ -35,10 +35,10 @@ osm install \
 
 ## 3. eBPF测试
 
-### 3.1 技术概念
+### 3.1 禁用 mTLS
 
 ```bash
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"sidecar":{"sidecarDrivers":[{"proxyServerPort":6060,"sidecarDisabledMTLS":true,"sidecarImage":"localhost:5000/flomesh/pipy-nightly:latest","sidecarName":"pipy"}]}}}' --type=merge
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"sidecar":{"sidecarDrivers":[{"proxyServerPort":6060,"sidecarDisabledMTLS":false,"sidecarImage":"localhost:5000/flomesh/pipy-nightly:latest","sidecarName":"pipy"}]}}}' --type=merge
 ```
 
 ### 3.2 部署业务 POD
@@ -55,13 +55,16 @@ kubectl wait --for=condition=ready pod -n ebpf -l app=sleep --timeout=180s
 kubectl wait --for=condition=ready pod -n ebpf -l app=helloworld --timeout=180s
 ```
 
-### 3.3 场景测试一：eBPF 改变连接关系
+### 3.3 场景测试一
 
 #### 3.3.1 测试指令
 
 ```bash
 sleep_client="$(kubectl get pod -n ebpf -l app=sleep -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec ${sleep_client} -n ebpf -c sleep -- curl -s -v helloworld:5000/hello
+kubectl exec ${sleep_client} -n ebpf -c sleep -- curl -s -v helloworld:5000/hello
+kubectl exec ${sleep_client} -n ebpf -c sleep -- curl -s -v helloworld-v1:5000/hello
+kubectl exec ${sleep_client} -n ebpf -c sleep -- curl -s -v helloworld-v2:5000/hello
 ```
 
 #### 3.3.2 测试结果
