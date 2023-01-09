@@ -38,7 +38,7 @@ osm install \
 ### 3.1 禁用 mTLS
 
 ```bash
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"sidecar":{"sidecarDrivers":[{"proxyServerPort":6060,"sidecarDisabledMTLS":false,"sidecarImage":"localhost:5000/flomesh/pipy-nightly:latest","sidecarName":"pipy"}]}}}' --type=merge
+kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"sidecar":{"sidecarDrivers":[{"proxyServerPort":6060,"sidecarDisabledMTLS":true,"sidecarImage":"localhost:5000/flomesh/pipy-nightly:latest","sidecarName":"pipy"}]}}}' --type=merge
 ```
 
 ### 3.2 部署业务 POD
