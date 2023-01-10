@@ -68,7 +68,7 @@ apiVersion: plugin.flomesh.io/v1alpha1
 metadata:
   name: token-verifier-1
 spec:
-  priority: 1
+  priority: 115
   pipyscript: |+
     (
     pipy({
@@ -78,13 +78,13 @@ spec:
         _valid: false,
     })
     .import({
-        __plugins: 'inbound',
+        __service: 'inbound-http-routing',
     })
     .pipeline()
     .onStart(
         () => void (
             _pluginName = __filename.slice(9, -3),
-            _pluginConfig = __plugins?.[_pluginName],
+            _pluginConfig = __service?.Plugins?.[_pluginName],
             _accessToken = _pluginConfig?.AccessToken
         )
     )
@@ -109,7 +109,7 @@ apiVersion: plugin.flomesh.io/v1alpha1
 metadata:
   name: token-injector-1
 spec:
-  priority: 2
+  priority: 115
   pipyscript: |+
     (
     pipy({
@@ -119,24 +119,26 @@ spec:
     })
 
     .import({
-        __plugins: 'outbound',
+        __service: 'outbound-http-routing',
     })
 
     .pipeline()
     .onStart(
         () => void (
             _pluginName = __filename.slice(9, -3),
-            _pluginConfig = __plugins?.[_pluginName],
+            _pluginConfig = __service?.Plugins?.[_pluginName],
             _accessToken = _pluginConfig?.AccessToken
         )
     )
     .handleMessageStart(
-        msg => _accessToken && (msg.head.headers['accesstoken'] = _accessToken) 
+        msg => _accessToken && (msg.head.headers['accesstoken'] = _accessToken)
     )
     .chain()
     )
 EOF
 ```
+**注意:**   
+**priority 的范围是(110, 120),  110 < priority < 120, 数字越大优先级越高。**   
 
 #### 3.2.3 设置插件链
 
@@ -245,7 +247,7 @@ kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:808
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
 ```
-结果： 
+测试结果：   
 1、访问 V1 失败  
 
 ```bash
@@ -274,7 +276,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok-v1.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok-v1.pipy:8080
 ```
-结果：
+测试结果：  
 访问 V1 成功   
 
 ```bash
@@ -293,7 +295,7 @@ curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metad
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok-v2.pipy:8080
 kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok-v2.pipy:8080
 ```
-结果：
+测试结果：  
 访问 V2 成功  
 
 ```
@@ -304,4 +306,5 @@ connection: keep-alive
 
 Hi, I am PIPY-OK v2!  
 ```
-
+## 5. 文档
+*[Pipy sidecar 模块设计与插件开发说明](https://github.com/wanpf/docs/blob/main/plugins/Pipy%20sidecar%20%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E4%B8%8E%E6%8F%92%E4%BB%B6%E5%BC%80%E5%8F%91%E8%AF%B4%E6%98%8E.pdf)*
