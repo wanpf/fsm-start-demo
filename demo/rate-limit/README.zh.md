@@ -7,8 +7,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.3.0-beta.4
+curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -23,8 +23,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.2.0 \
+    --set=osm.image.registry=cybwan \
+    --set=osm.image.tag=1.3.0-beta.4 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enableEgress=false \
     --set=osm.sidecarLogLevel=debug \
@@ -50,12 +50,9 @@ osm install \
   - 限速粒度
     - 虚拟主机层级
     - 请求路径层级
-    - 请求头层级
-
   - 触发条件
     - 统计时间窗口内请求的数量
     - 统计时间窗口内请求的波动峰值
-
   - 限速响应
     - 回写状态码：状态码取值范围 400~599，缺省 429
     - 回写响应头
