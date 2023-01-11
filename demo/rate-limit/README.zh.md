@@ -78,25 +78,6 @@ kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/ma
 kubectl wait --for=condition=ready pod -n ratelimit -l app=fortio --timeout=180s
 kubectl wait --for=condition=ready pod -n ratelimit -l app=fortio-client --timeout=180s
 kubectl wait --for=condition=ready pod -n ratelimit -l app=curl --timeout=180s
-
-kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
-kind: UpstreamTrafficSetting
-metadata:
-  name: http-rate-limit
-  namespace: ratelimit
-spec:
-  host: fortio.ratelimit.svc.cluster.local
-  rateLimit:
-    local:
-      tcp:
-        connections: 1
-        unit: minute
-        burst: 10
-      http:
-        requests: 3
-        unit: minute
-EOF
 ```
 
 ## 4 场景测试一：4层TCP限速
