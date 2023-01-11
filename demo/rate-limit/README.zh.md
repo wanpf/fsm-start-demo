@@ -296,7 +296,15 @@ tcp short read : 10 (100.0 %)
 All done 10 calls (plus 0 warmup) 2.364 ms avg, 1137.8 qps
 ```
 
-##### 3.3.3.4 指标数据
+##### 3.3.3.4 测试指令
+```bash
+fortio_client="$(kubectl get pod -n ratelimit -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+
+kubectl exec "$fortio_client" -n ratelimit -c fortio-client -- fortio load -qps -1 -c 3 -n 10 tcp://fortio.ratelimit.svc.cluster.local:8078
+```
+第二次执行，所有请求都失败。  
+
+##### 3.3.3.5 指标数据
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
@@ -552,7 +560,16 @@ All done 10 calls (plus 0 warmup) 5.352 ms avg, 6.6 qps
 Code 200 : 10 (100.0 %)
 ```
 
-##### 5.2.2.4 指标数据
+##### 5.2.2.4 测试指令
+
+```bash
+fortio_client="$(kubectl get pod -n ratelimit -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+
+kubectl exec "$fortio_client" -n ratelimit -c fortio-client -- fortio load -c 3 -n 10 http://fortio.ratelimit.svc.cluster.local:8080
+```
+第二次执行命令，所有请求全部失败。  
+
+##### 5.2.2.5 指标数据
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
@@ -738,7 +755,7 @@ metadata:
 spec:
   host: fortio.ratelimit.svc.cluster.local
   httpRoutes:
-    - path: /login?user_name=*&passwd=*
+    - path: .*
       rateLimit:
         local:
           requests: 3
@@ -906,7 +923,16 @@ All done 10 calls (plus 0 warmup) 5.352 ms avg, 6.6 qps
 Code 200 : 10 (100.0 %)
 ```
 
-###### 5.3.1.3.4 指标数据
+###### 5.3.1.3.4 测试指令
+
+```bash
+fortio_client="$(kubectl get pod -n ratelimit -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+
+kubectl exec "$fortio_client" -n ratelimit -c fortio-client -- fortio load -c 3 -n 10 http://fortio.ratelimit.svc.cluster.local:8080
+```
+第二次执行命令，所有请求都失败。  
+
+###### 5.3.1.3.5 指标数据
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
@@ -1332,7 +1358,16 @@ All done 10 calls (plus 0 warmup) 5.352 ms avg, 6.6 qps
 Code 200 : 10 (100.0 %)
 ```
 
-###### 5.3.2.4.4 指标数据
+###### 5.3.2.4.4 测试指令
+
+```bash
+fortio_client="$(kubectl get pod -n ratelimit -l app=fortio-client -o jsonpath='{.items[0].metadata.name}')"
+
+kubectl exec "$fortio_client" -n ratelimit -c fortio-client -- fortio load -c 3 -n 10 http://fortio.ratelimit.svc.cluster.local:8080/debug
+```
+第二次执行命令，所有请求都失败。  
+
+###### 5.3.2.4.5 指标数据
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
