@@ -5,7 +5,7 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0-beta.3
+release=v1.3.0
 curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
@@ -22,7 +22,7 @@ osm install \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0-beta.3 \
+    --set=osm.image.tag=1.3.0 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
@@ -33,7 +33,7 @@ osm install \
 
 ```bash
 helm repo add fsm https://charts.flomesh.io
-helm install --namespace flomesh --create-namespace --version=0.2.0-alpha.13 -f https://raw.githubusercontent.com/flomesh-io/fsm/release-v0.2/samples/mTLS-ingress/values.yaml fsm fsm/fsm
+helm install --namespace flomesh --create-namespace --version=0.2.0 -f https://raw.githubusercontent.com/flomesh-io/fsm/release-v0.2/samples/mTLS-ingress/values.yaml fsm fsm/fsm
 
 
 kubectl wait --namespace flomesh \
