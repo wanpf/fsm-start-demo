@@ -7,8 +7,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.4.0
+curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -23,8 +23,8 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
+    --set=osm.image.registry=cybwan \
+    --set=osm.image.tag=1.4.0 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enablePermissiveTrafficPolicy=true \
     --set=osm.sidecarLogLevel=debug \
@@ -35,24 +35,19 @@ osm install \
 
 ## 3. eBPF测试
 
-### 3.1 禁用 mTLS
-
-```bash
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"sidecar":{"sidecarDrivers":[{"proxyServerPort":6060,"sidecarDisabledMTLS":true,"sidecarImage":"localhost:5000/flomesh/pipy-nightly:latest","sidecarName":"pipy"}]}}}' --type=merge
-```
-
 ### 3.2 部署业务 POD
 
 ```bash
 #模拟业务服务
 kubectl create namespace ebpf
 osm namespace add ebpf
-kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/sleep.yaml
-kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/helloworld.yaml
+kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/curl.yaml
+kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/pipy-ok.yaml
 
 #等待依赖的 POD 正常启动
-kubectl wait --for=condition=ready pod -n ebpf -l app=sleep --timeout=180s
-kubectl wait --for=condition=ready pod -n ebpf -l app=helloworld --timeout=180s
+kubectl wait --for=condition=ready pod -n ebpf -l app=curl --timeout=180s
+kubectl wait --for=condition=ready pod -n ebpf -l app=pipy-ok -l version=v1 --timeout=180s
+kubectl wait --for=condition=ready pod -n ebpf -l app=pipy-ok -l version=v2 --timeout=180s
 ```
 
 ### 3.3 场景测试一
