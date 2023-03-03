@@ -7,8 +7,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.3.2
+curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
@@ -23,11 +23,11 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
+    --set=osm.image.registry=cybwan \
+    --set=osm.image.tag=1.3.2 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+    --set=osm.controllerLogLevel=error \
     --timeout=900s
 ```
 
@@ -261,7 +261,7 @@ EOF
 #### 3.5.5 测试指令
 
 ```bash
-kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -- curl -ksI https://httpbin.httpbin:14001/get --cacert /certs/ca.crt --key /certs/tls.key --cert /certs/tls.crt
+kubectl exec "$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n curl -- curl -vsI https://httpbin.httpbin:14001/get --cacert /certs/ca.crt --key /certs/tls.key --cert /certs/tls.crt
 ```
 
 #### 3.5.6 测试结果
