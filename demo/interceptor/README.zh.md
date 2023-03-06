@@ -6,7 +6,7 @@
 
 ### 1.1 部署环境准备
 
-- [ ] 部署 3 个 **ubuntu 22.04** 的虚机，一个作为 master，两个作为 node
+- [ ] 部署 3 个 **ubuntu 20.04/22.04** 的虚机，一个作为 master，两个作为 node
 
 - [ ] 主机名分别设置为 master，node1，node2
 
