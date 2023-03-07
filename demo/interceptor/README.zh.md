@@ -96,13 +96,14 @@ osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
     --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.4.0 \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.3.2 \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enablePermissiveTrafficPolicy=true \
     --set=osm.sidecarLogLevel=debug \
     --set=osm.controllerLogLevel=warn \
     --set=osm.trafficInterceptionMode=ebpf \
+    --set=osm.osmInterceptor.debug=true \
     --timeout=900s
 ```
 
