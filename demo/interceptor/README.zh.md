@@ -80,8 +80,8 @@ kubectl get pods -A -o wide
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.4.0
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.3.2
+curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/osm version
 cp ./${system}-${arch}/osm /usr/local/bin/
 ```
