@@ -107,6 +107,32 @@ osm install \
     --timeout=900s
 ```
 
+如果部署 osm,指令参考:
+
+```bash
+system=$(uname -s | tr [:upper:] [:lower:])
+arch=$(dpkg --print-architecture)
+release=v1.2.3
+curl -L https://github.com/openservicemesh/osm/releases/download/${release}/osm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/osm version
+cp ./${system}-${arch}/osm /usr/local/bin/
+
+export osm_namespace=osm-system 
+export osm_mesh_name=osm 
+
+osm install \
+    --mesh-name "$osm_mesh_name" \
+    --osm-namespace "$osm_namespace" \
+    --set=osm.image.registry=openservicemesh \
+    --set=osm.image.tag=v1.2.3 \
+    --set=osm.certificateProvider.kind=tresor \
+    --set=osm.image.pullPolicy=Always \
+    --set=osm.enablePermissiveTrafficPolicy=true \
+    --set=osm.controllerLogLevel=warn \
+    --verbose \
+    --timeout=900s
+```
+
 ## 3. 部署 Merbridge 服务
 
 ```
@@ -114,7 +140,6 @@ curl -L https://raw.githubusercontent.com/merbridge/merbridge/main/deploy/all-in
 sed -i 's/--cni-mode=false/--cni-mode=true/g' all-in-one-osm.yaml
 sed -i '/--cni-mode=true/a\\t\t- --debug=true' all-in-one-osm.yaml
 sed -i 's/\t/    /g' all-in-one-osm.yaml
-sed -i 's#ghcr.io/merbridge/merbridge#local.registry/flomesh/merbridge#g' all-in-one-osm.yaml
 kubectl apply -f all-in-one-osm.yaml
 
 sleep 5s
