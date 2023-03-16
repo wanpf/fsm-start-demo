@@ -6,7 +6,7 @@
 
 ### 1.1 部署环境准备
 
-- [ ] 部署 3 个 **ubuntu 20.04/22.04** 的虚机，一个作为 master，两个作为 node
+- [ ] 部署 3 个 **ubuntu 22.04/20.04** 的虚机，一个作为 master，两个作为 node
 
 - [ ] 主机名分别设置为 master，node1，node2
 
@@ -98,10 +98,11 @@ export osm_mesh_name=osm
 osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
+    --set=osm.image.registry=flomesh \
+    --set=osm.image.tag=1.3.3 \
     --set=osm.certificateProvider.kind=tresor \
     --set=osm.image.pullPolicy=Always \
     --set=osm.enablePermissiveTrafficPolicy=true \
-    --set=osm.sidecarLogLevel=debug \
     --set=osm.controllerLogLevel=warn \
     --timeout=900s
 ```
@@ -113,8 +114,10 @@ curl -L https://raw.githubusercontent.com/merbridge/merbridge/main/deploy/all-in
 sed -i 's/--cni-mode=false/--cni-mode=true/g' all-in-one-osm.yaml
 sed -i '/--cni-mode=true/a\\t\t- --debug=true' all-in-one-osm.yaml
 sed -i 's/\t/    /g' all-in-one-osm.yaml
+sed -i 's#ghcr.io/merbridge/merbridge#local.registry/flomesh/merbridge#g' all-in-one-osm.yaml
 kubectl apply -f all-in-one-osm.yaml
 
+sleep 5s
 kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-selector spec.nodeName==master --timeout=1800s
 kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-selector spec.nodeName==node1 --timeout=1800s
 kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-selector spec.nodeName==node2 --timeout=1800s
@@ -128,17 +131,18 @@ kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-se
 #模拟业务服务
 kubectl create namespace demo
 osm namespace add demo
-kubectl apply -n demo -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/curl.yaml
-kubectl apply -n demo -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/pipy-ok.yaml
+kubectl apply -n demo -f https://raw.githubusercontent.com/istio/istio/master/samples/sleep/sleep.yaml
+kubectl apply -n demo -f https://raw.githubusercontent.com/istio/istio/master/samples/helloworld/helloworld.yaml
 
 #让 Pod 分布到不同的 node 上
-kubectl patch deployments pipy-ok-v1 -n demo -p '{"spec":{"template":{"spec":{"nodeName":"node1"}}}}'
-kubectl patch deployments pipy-ok-v2 -n demo -p '{"spec":{"template":{"spec":{"nodeName":"node2"}}}}'
+kubectl patch deployments sleep -n demo -p '{"spec":{"template":{"spec":{"nodeName":"node1"}}}}'
+kubectl patch deployments helloworld-v1 -n demo -p '{"spec":{"template":{"spec":{"nodeName":"node1"}}}}'
+kubectl patch deployments helloworld-v2 -n demo -p '{"spec":{"template":{"spec":{"nodeName":"node2"}}}}'
 
 #等待依赖的 POD 正常启动
-kubectl wait --for=condition=ready pod -n demo -l app=curl --timeout=180s
-kubectl wait --for=condition=ready pod -n demo -l app=pipy-ok -l version=v1 --timeout=180s
-kubectl wait --for=condition=ready pod -n demo -l app=pipy-ok -l version=v2 --timeout=180s
+kubectl wait --for=condition=ready pod -n demo -l app=sleep --timeout=180s
+kubectl wait --for=condition=ready pod -n demo -l app=helloworld -l version=v1 --timeout=180s
+kubectl wait --for=condition=ready pod -n demo -l app=helloworld -l version=v2 --timeout=180s
 ```
 
 ### 4.2 场景测试一
@@ -146,7 +150,7 @@ kubectl wait --for=condition=ready pod -n demo -l app=pipy-ok -l version=v2 --ti
 #### 4.2.1 在 node1&2 上监测内核日志
 
 ```bash
-cat /sys/kernel/debug/tracing/trace_pipe|grep bpf_trace_printk
+cat /sys/kernel/debug/tracing/trace_pipe|grep bpf_trace_printk|grep -E "rewritten|redirect"
 ```
 
 #### 4.2.2 测试指令
@@ -154,8 +158,7 @@ cat /sys/kernel/debug/tracing/trace_pipe|grep bpf_trace_printk
 多次执行:
 
 ```bash
-curl_client="$(kubectl get pod -n demo -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n demo -c curl -- curl -s pipy-ok:8080
+kubectl exec $(kubectl get po -l app=sleep -n demo -o=jsonpath='{..metadata.name}') -n demo -c sleep -- curl -s helloworld:5000/hello
 ```
 
 #### 4.2.3 测试结果
@@ -163,7 +166,7 @@ kubectl exec ${curl_client} -n demo -c curl -- curl -s pipy-ok:8080
 正确返回结果类似于:
 
 ```bash
-Hi, I am pipy ok v1 !
-Hi, I am pipy ok v2 !
+Hello version: v1, instance: helloworld-v1-5d46f78b4c-hghcj
+Hello version: v2, instance: helloworld-v2-6b56769f9d-stwrj
 ```
 
