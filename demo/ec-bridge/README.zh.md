@@ -31,10 +31,20 @@ osm install \
     --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}" \
     --timeout=900s
 ```
+## 3. 部署业务服务
 
-## 3.模拟导入多集群服务
+```bash
+kubectl create namespace pipy
+kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/ec-bridge/pipy-ok.pipy.yaml
+
+#等待依赖的 POD 正常启动
+sleep 3
+kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
+```
+## 4.模拟导入多集群服务
 
 ```
+kubectl create namespace pipy
 cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceImport
@@ -74,16 +84,16 @@ spec:
 EOF
 ```
 
-## 4. 转发 pipy repo 管理端口
+## 5. 转发 pipy repo 管理端口
 
 ```
 export osm_namespace=osm-system
-OSM_POD=$(kubectl get pods -n "$osm_namespace" --no-headers  --selector app=osm-controller | awk 'NR==1{print $1}')
+OSM_POD=$(kubectl get pods -n "$osm_namespace" --no-headers  --selector app=mcs-interceptor | awk 'NR==1{print $1}')
 
 kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
 ```
 
-## 5.config.json样例
+## 6.config.json样例
 
 ```json
 {
