@@ -89,7 +89,6 @@ EOF
 ```
 export osm_namespace=osm-system
 OSM_POD=$(kubectl get pods -n "$osm_namespace" --no-headers  --selector app=mcs-interceptor | awk 'NR==1{print $1}')
-
 kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
 ```
 
@@ -97,8 +96,8 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
 
 ```json
 {
- "Ts": "2023-03-21T07:04:09.379433147Z",
- "Version": "6882559880055383607",
+ "Ts": "2023-03-21T12:58:35.58058586Z",
+ "Version": "10753083564377141199",
  "Spec": {
   "SidecarLogLevel": "error",
   "Probes": {
@@ -162,6 +161,7 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
          "Headers": null,
          "Methods": null,
          "TargetClusters": {
+          "pipy/pipy-ok|8080": 100,
           "pipy/pipy-ok|8091": 100,
           "pipy/pipy-ok|8093": 100
          }
@@ -174,6 +174,13 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
    ]
   },
   "ClustersConfigs": {
+   "pipy/pipy-ok|8080": {
+    "Endpoints": {
+     "10.244.1.2:8080": {
+      "Weight": 100
+     }
+    }
+   },
    "pipy/pipy-ok|8091": {
     "Endpoints": {
      "192.168.127.91:8091": {
@@ -229,7 +236,7 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
  },
  "DNSResolveDB": {
   "pipy-ok.pipy.svc.cluster.local": [
-   "192.168.127.91"
+   "169.254.168.252"
   ]
  }
 }
