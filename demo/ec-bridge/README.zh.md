@@ -18,7 +18,7 @@ cp ./${system}-${arch}/osm /usr/local/bin/
 ```bash
 export osm_namespace=osm-system
 export osm_mesh_name=osm
-
+dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
 osm install \
     --mesh-name "$osm_mesh_name" \
     --osm-namespace "$osm_namespace" \
@@ -27,21 +27,12 @@ osm install \
     --set=osm.image.pullPolicy=Always \
     --set=osm.sidecarLogLevel=error \
     --set=osm.controllerLogLevel=warn \
+    --set=osm.localDNSProxy.enable=true \
+    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}" \
     --timeout=900s
 ```
 
-## 3. 部署业务服务
-
-```bash
-kubectl create namespace pipy
-kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/ec-bridge/pipy-ok.pipy.yaml
-
-#等待依赖的 POD 正常启动
-sleep 3
-kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
-```
-
-## 4.模拟导入多集群服务
+## 3.模拟导入多集群服务
 
 ```
 cat <<EOF | kubectl apply -f -
@@ -83,7 +74,7 @@ spec:
 EOF
 ```
 
-## 5. 转发 pipy repo 管理端口
+## 4. 转发 pipy repo 管理端口
 
 ```
 export osm_namespace=osm-system
@@ -92,12 +83,12 @@ OSM_POD=$(kubectl get pods -n "$osm_namespace" --no-headers  --selector app=osm-
 kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
 ```
 
-## 6.config.json样例
+## 5.config.json样例
 
 ```json
 {
- "Ts": "2023-03-21T06:33:13.67955152Z",
- "Version": "3532027475660608080",
+ "Ts": "2023-03-21T07:04:09.379433147Z",
+ "Version": "6882559880055383607",
  "Spec": {
   "SidecarLogLevel": "error",
   "Probes": {
@@ -129,6 +120,11 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
      "failureThreshold": 3
     }
    ]
+  },
+  "LocalDNSProxy": {
+   "UpstreamDNSServers": {
+    "Primary": "10.96.0.10"
+   }
   }
  },
  "Outbound": {
@@ -156,7 +152,6 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
          "Headers": null,
          "Methods": null,
          "TargetClusters": {
-          "pipy/pipy-ok|8080": 100,
           "pipy/pipy-ok|8091": 100,
           "pipy/pipy-ok|8093": 100
          }
@@ -169,13 +164,6 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
    ]
   },
   "ClustersConfigs": {
-   "pipy/pipy-ok|8080": {
-    "Endpoints": {
-     "10.244.2.3:8080": {
-      "Weight": 100
-     }
-    }
-   },
    "pipy/pipy-ok|8091": {
     "Endpoints": {
      "192.168.127.91:8091": {
@@ -227,6 +215,11 @@ kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
    "modules/outbound-tcp-routing.js",
    "modules/outbound-tcp-load-balancing.js",
    "modules/outbound-tcp-default.js"
+  ]
+ },
+ "DNSResolveDB": {
+  "pipy-ok.pipy.svc.cluster.local": [
+   "192.168.127.91"
   ]
  }
 }
