@@ -83,3 +83,152 @@ spec:
 EOF
 ```
 
+## 5. 转发 pipy repo 管理端口
+
+```
+export osm_namespace=osm-system
+OSM_POD=$(kubectl get pods -n "$osm_namespace" --no-headers  --selector app=osm-controller | awk 'NR==1{print $1}')
+
+kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
+```
+
+## 6.config.json样例
+
+```json
+{
+ "Ts": "2023-03-21T06:33:13.67955152Z",
+ "Version": "3532027475660608080",
+ "Spec": {
+  "SidecarLogLevel": "error",
+  "Probes": {
+   "ReadinessProbes": [
+    {
+     "httpGet": {
+      "path": "/health/ready",
+      "port": 9091,
+      "scheme": "HTTP"
+     },
+     "initialDelaySeconds": 1,
+     "timeoutSeconds": 5,
+     "periodSeconds": 10,
+     "successThreshold": 1,
+     "failureThreshold": 3
+    }
+   ],
+   "LivenessProbes": [
+    {
+     "httpGet": {
+      "path": "/health/alive",
+      "port": 9091,
+      "scheme": "HTTP"
+     },
+     "initialDelaySeconds": 1,
+     "timeoutSeconds": 5,
+     "periodSeconds": 10,
+     "successThreshold": 1,
+     "failureThreshold": 3
+    }
+   ]
+  }
+ },
+ "Outbound": {
+  "TrafficMatches": {
+   "8080": [
+    {
+     "Port": 8080,
+     "Protocol": "http",
+     "HttpHostPort2Service": {
+      "pipy-ok.pipy": "pipy-ok.pipy.svc.cluster.local",
+      "pipy-ok.pipy.svc": "pipy-ok.pipy.svc.cluster.local",
+      "pipy-ok.pipy.svc.cluster": "pipy-ok.pipy.svc.cluster.local",
+      "pipy-ok.pipy.svc.cluster.local": "pipy-ok.pipy.svc.cluster.local",
+      "pipy-ok.pipy.svc.cluster.local:8080": "pipy-ok.pipy.svc.cluster.local",
+      "pipy-ok.pipy.svc.cluster:8080": "pipy-ok.pipy.svc.cluster.local",
+      "pipy-ok.pipy.svc:8080": "pipy-ok.pipy.svc.cluster.local",
+      "pipy-ok.pipy:8080": "pipy-ok.pipy.svc.cluster.local"
+     },
+     "HttpServiceRouteRules": {
+      "pipy-ok.pipy.svc.cluster.local": {
+       "RouteRules": [
+        {
+         "Path": ".*",
+         "Type": "Regex",
+         "Headers": null,
+         "Methods": null,
+         "TargetClusters": {
+          "pipy/pipy-ok|8080": 100,
+          "pipy/pipy-ok|8091": 100,
+          "pipy/pipy-ok|8093": 100
+         }
+        }
+       ]
+      }
+     },
+     "TcpServiceRouteRules": null
+    }
+   ]
+  },
+  "ClustersConfigs": {
+   "pipy/pipy-ok|8080": {
+    "Endpoints": {
+     "10.244.2.3:8080": {
+      "Weight": 100
+     }
+    }
+   },
+   "pipy/pipy-ok|8091": {
+    "Endpoints": {
+     "192.168.127.91:8091": {
+      "Weight": 100,
+      "Key": "default/default/default/cluster1",
+      "Path": "/c1/ok"
+     }
+    }
+   },
+   "pipy/pipy-ok|8093": {
+    "Endpoints": {
+     "192.168.127.91:8093": {
+      "Weight": 100,
+      "Key": "default/default/default/cluster3",
+      "Path": "/c3/ok"
+     }
+    }
+   }
+  }
+ },
+ "Chains": {
+  "inbound-http": [
+   "modules/inbound-tls-termination.js",
+   "modules/inbound-http-routing.js",
+   "modules/inbound-metrics-http.js",
+   "modules/inbound-tracing-http.js",
+   "modules/inbound-logging-http.js",
+   "modules/inbound-throttle-service.js",
+   "modules/inbound-throttle-route.js",
+   "modules/inbound-http-load-balancing.js",
+   "modules/inbound-http-default.js"
+  ],
+  "inbound-tcp": [
+   "modules/inbound-tls-termination.js",
+   "modules/inbound-tcp-routing.js",
+   "modules/inbound-tcp-load-balancing.js",
+   "modules/inbound-tcp-default.js"
+  ],
+  "outbound-http": [
+   "modules/outbound-http-routing.js",
+   "modules/outbound-metrics-http.js",
+   "modules/outbound-tracing-http.js",
+   "modules/outbound-logging-http.js",
+   "modules/outbound-circuit-breaker.js",
+   "modules/outbound-http-load-balancing.js",
+   "modules/outbound-http-default.js"
+  ],
+  "outbound-tcp": [
+   "modules/outbound-tcp-routing.js",
+   "modules/outbound-tcp-load-balancing.js",
+   "modules/outbound-tcp-default.js"
+  ]
+ }
+}
+```
+
