@@ -1,50 +1,95 @@
 
 
-# ErieCanal Bridge测试
+# ErieCanal Net测试
 
-## 1. 下载并安装 ec-bridge 命令行工具
+## 1. 部署 k8s 环境
+
+参考: https://github.com/cybwan/osm-edge-start-demo/blob/main/demo/interceptor/README.zh.md
+
+## 2. 下载并安装 ecnet 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v0.0.1-ec.1
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.1
+curl -L https://github.com/cybwan/ErieCanalNet/releases/download/${release}/erie-canal-net-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/ecnet version
+cp ./${system}-${arch}/ecnet /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge
+## 3. 安装 ErieCanal Net
 
 ```bash
-export osm_namespace=osm-system
-export osm_mesh_name=osm
-dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=0.0.1-ec.1 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
-    --set=osm.localDNSProxy.enable=true \
-    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}" \
+export ecnet_namespace=ecnet-system
+export ecnet_mesh_name=ecnet
+export dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
+ecnet install \
+    --mesh-name "$ecnet_mesh_name" \
+    --ecnet-namespace "$ecnet_namespace" \
+    --set=ecnet.image.registry=cybwan \
+    --set=ecnet.image.tag=1.0.1 \
+    --set=ecnet.image.pullPolicy=Always \
+    --set=ecnet.proxyLogLevel=error \
+    --set=ecnet.controllerLogLevel=warn \
+    --set=ecnet.localDNSProxy.enable=true \
+    --set=ecnet.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}" \
     --timeout=900s
 ```
-## 3. 部署业务服务
+## 4. 部署模拟业务
 
 ```bash
-kubectl create namespace pipy
-kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/ec-bridge/pipy-ok.pipy.yaml
+kubectl create namespace demo
+cat <<EOF | kubectl apply -n demo -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sleep
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sleep
+  labels:
+    app: sleep
+    service: sleep
+spec:
+  ports:
+  - port: 80
+    name: http
+  selector:
+    app: sleep
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep
+  template:
+    metadata:
+      labels:
+        app: sleep
+    spec:
+      terminationGracePeriodSeconds: 0
+      serviceAccountName: sleep
+      containers:
+      - name: sleep
+        image: local.registry/ubuntu:20.04
+        imagePullPolicy: Always
+        command: ["/bin/sleep", "infinity"]
+      nodeName: node2
+EOF
 
-#等待依赖的 POD 正常启动
-sleep 3
-kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok --timeout=180s
+kubectl wait --for=condition=ready pod -n demo -l app=sleep --timeout=180s
 ```
-## 4.模拟导入多集群服务
+## 5.模拟导入多集群服务
 
 ```
 kubectl create namespace pipy
+
 cat <<EOF | kubectl apply -f -
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceImport
@@ -56,17 +101,10 @@ spec:
   - endpoints:
     - clusterKey: default/default/default/cluster3
       target:
-        host: 192.168.127.91
-        ip: 192.168.127.91
-        path: /c3/ok
-        port: 8093
-    - clusterKey: default/default/default/cluster1
-      target:
-        host: 192.168.127.91
-        ip: 192.168.127.91
-        path: /c1/ok
-        port: 8091
-    name: pipy
+        host: 3.226.203.163 # httpbin.org
+        ip: 3.226.203.163
+        path: /
+        port: 80
     port: 8080
     protocol: TCP
   serviceAccountName: '*'
@@ -87,158 +125,29 @@ EOF
 ## 5. 转发 pipy repo 管理端口
 
 ```
-export osm_namespace=osm-system
-OSM_POD=$(kubectl get pods -n "$osm_namespace" --no-headers  --selector app=mcs-interceptor | awk 'NR==1{print $1}')
-kubectl port-forward -n "$osm_namespace" "$OSM_POD" 6060:6060 --address 0.0.0.0
+export ecnet_namespace=ecnet-system
+ECNET_POD=$(kubectl get pods -n "$ecnet_namespace" --no-headers  --selector app=ecnet-controller | awk 'NR==1{print $1}')
+kubectl port-forward -n "$ecnet_namespace" "$ECNET_POD" 80:6060 --address 0.0.0.0
 ```
 
-## 6.config.json样例
+## 6.测试
+
+测试指令:
 
 ```json
-{
- "Ts": "2023-03-21T12:58:35.58058586Z",
- "Version": "10753083564377141199",
- "Spec": {
-  "SidecarLogLevel": "error",
-  "Probes": {
-   "ReadinessProbes": [
-    {
-     "httpGet": {
-      "path": "/health/ready",
-      "port": 9091,
-      "scheme": "HTTP"
-     },
-     "initialDelaySeconds": 1,
-     "timeoutSeconds": 5,
-     "periodSeconds": 10,
-     "successThreshold": 1,
-     "failureThreshold": 3
-    }
-   ],
-   "LivenessProbes": [
-    {
-     "httpGet": {
-      "path": "/health/alive",
-      "port": 9091,
-      "scheme": "HTTP"
-     },
-     "initialDelaySeconds": 1,
-     "timeoutSeconds": 5,
-     "periodSeconds": 10,
-     "successThreshold": 1,
-     "failureThreshold": 3
-    }
-   ]
-  },
-  "LocalDNSProxy": {
-   "UpstreamDNSServers": {
-    "Primary": "10.96.0.10"
-   }
-  }
- },
- "Outbound": {
-  "TrafficMatches": {
-   "8080": [
-    {
-     "Port": 8080,
-     "Protocol": "http",
-     "HttpHostPort2Service": {
-      "pipy-ok.pipy": "pipy-ok.pipy.svc.cluster.local",
-      "pipy-ok.pipy.svc": "pipy-ok.pipy.svc.cluster.local",
-      "pipy-ok.pipy.svc.cluster": "pipy-ok.pipy.svc.cluster.local",
-      "pipy-ok.pipy.svc.cluster.local": "pipy-ok.pipy.svc.cluster.local",
-      "pipy-ok.pipy.svc.cluster.local:8080": "pipy-ok.pipy.svc.cluster.local",
-      "pipy-ok.pipy.svc.cluster:8080": "pipy-ok.pipy.svc.cluster.local",
-      "pipy-ok.pipy.svc:8080": "pipy-ok.pipy.svc.cluster.local",
-      "pipy-ok.pipy:8080": "pipy-ok.pipy.svc.cluster.local"
-     },
-     "HttpServiceRouteRules": {
-      "pipy-ok.pipy.svc.cluster.local": {
-       "RouteRules": [
-        {
-         "Path": ".*",
-         "Type": "Regex",
-         "Headers": null,
-         "Methods": null,
-         "TargetClusters": {
-          "pipy/pipy-ok|8080": 100,
-          "pipy/pipy-ok|8091": 100,
-          "pipy/pipy-ok|8093": 100
-         }
-        }
-       ]
-      }
-     },
-     "TcpServiceRouteRules": null
-    }
-   ]
-  },
-  "ClustersConfigs": {
-   "pipy/pipy-ok|8080": {
-    "Endpoints": {
-     "10.244.1.2:8080": {
-      "Weight": 100
-     }
-    }
-   },
-   "pipy/pipy-ok|8091": {
-    "Endpoints": {
-     "192.168.127.91:8091": {
-      "Weight": 100,
-      "Key": "default/default/default/cluster1",
-      "Path": "/c1/ok"
-     }
-    }
-   },
-   "pipy/pipy-ok|8093": {
-    "Endpoints": {
-     "192.168.127.91:8093": {
-      "Weight": 100,
-      "Key": "default/default/default/cluster3",
-      "Path": "/c3/ok"
-     }
-    }
-   }
-  }
- },
- "Chains": {
-  "inbound-http": [
-   "modules/inbound-tls-termination.js",
-   "modules/inbound-http-routing.js",
-   "modules/inbound-metrics-http.js",
-   "modules/inbound-tracing-http.js",
-   "modules/inbound-logging-http.js",
-   "modules/inbound-throttle-service.js",
-   "modules/inbound-throttle-route.js",
-   "modules/inbound-http-load-balancing.js",
-   "modules/inbound-http-default.js"
-  ],
-  "inbound-tcp": [
-   "modules/inbound-tls-termination.js",
-   "modules/inbound-tcp-routing.js",
-   "modules/inbound-tcp-load-balancing.js",
-   "modules/inbound-tcp-default.js"
-  ],
-  "outbound-http": [
-   "modules/outbound-http-routing.js",
-   "modules/outbound-metrics-http.js",
-   "modules/outbound-tracing-http.js",
-   "modules/outbound-logging-http.js",
-   "modules/outbound-circuit-breaker.js",
-   "modules/outbound-http-load-balancing.js",
-   "modules/outbound-http-default.js"
-  ],
-  "outbound-tcp": [
-   "modules/outbound-tcp-routing.js",
-   "modules/outbound-tcp-load-balancing.js",
-   "modules/outbound-tcp-default.js"
-  ]
- },
- "DNSResolveDB": {
-  "pipy-ok.pipy.svc.cluster.local": [
-   "169.254.168.252"
-  ]
- }
-}
+sleep_client="$(kubectl get pod -n demo -l app=sleep -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${sleep_client} -n demo -- curl -sI pipy-ok.pipy:8080
+```
+
+期望结果:
+
+```
+HTTP/1.1 200 OK
+date: Tue, 28 Mar 2023 01:40:35 GMT
+content-type: text/html; charset=utf-8
+content-length: 9593
+server: gunicorn/19.9.0
+access-control-allow-origin: *
+access-control-allow-credentials: true
 ```
 
