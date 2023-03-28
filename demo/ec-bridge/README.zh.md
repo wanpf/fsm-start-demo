@@ -134,14 +134,14 @@ kubectl port-forward -n "$ecnet_namespace" "$ECNET_POD" 80:6060 --address 0.0.0.
 
 测试指令:
 
-```json
+```bash
 sleep_client="$(kubectl get pod -n demo -l app=sleep -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec ${sleep_client} -n demo -- curl -sI pipy-ok.pipy:8080
 ```
 
 期望结果:
 
-```
+```bash
 HTTP/1.1 200 OK
 date: Tue, 28 Mar 2023 01:40:35 GMT
 content-type: text/html; charset=utf-8
