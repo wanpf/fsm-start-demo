@@ -29,7 +29,7 @@ ecnet install \
     --set=ecnet.image.registry=cybwan \
     --set=ecnet.image.tag=1.0.1 \
     --set=ecnet.image.pullPolicy=Always \
-    --set=ecnet.proxyLogLevel=error \
+    --set=ecnet.proxyLogLevel=debug \
     --set=ecnet.controllerLogLevel=warn \
     --set=ecnet.localDNSProxy.enable=true \
     --set=ecnet.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}" \
