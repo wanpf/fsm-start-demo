@@ -23,7 +23,7 @@ spec:
     ((
       config = pipy.solve('config.js'),
 
-      allMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH'],
+      allMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 
       clusterCache = new algo.Cache(
         (clusterName => (
@@ -60,13 +60,15 @@ spec:
                   (path, headers) => matchPath(path) && headerRules.every(([k, v]) => v.test(headers[k] || '')) && (
                     __route = config,
                     __service = service,
-                    __cluster = clusterCache.get(balancer.next()?.id)
+                    __cluster = clusterCache.get(balancer.next()?.id),
+                    true
                   )
                 ) : (
                   (path) => matchPath(path) && (
                     __route = config,
                     __service = service,
-                    __cluster = clusterCache.get(balancer.next()?.id)
+                    __cluster = clusterCache.get(balancer.next()?.id),
+                    true
                   )
                 ),
                 allowedIdentities = config.AllowedServices ? new Set(config.AllowedServices) : [''],
@@ -190,7 +192,7 @@ spec:
         failover,
       } = pipy.solve('utils.js'),
 
-      allMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH'],
+      allMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 
       clusterCache = new algo.Cache(
         (clusterName => (
@@ -228,13 +230,15 @@ spec:
                   (path, headers) => matchPath(path) && headerRules.every(([k, v]) => v.test(headers[k] || '')) && (
                     __route = config,
                     __service = service,
-                    __cluster = clusterCache.get(balancer.next()?.id)
+                    __cluster = clusterCache.get(balancer.next({})?.id),
+                    true
                   )
                 ) : (
                   (path) => matchPath(path) && (
                     __route = config,
                     __service = service,
-                    __cluster = clusterCache.get(balancer.next()?.id)
+                    __cluster = clusterCache.get(balancer.next({})?.id),
+                    true
                   )
                 ),
                 allowedMethods = config.Methods || allMethods,
@@ -315,7 +319,7 @@ EOF
 
 ```
 
- 
+
 #### 3.  设置插件链
 
 ```bash
