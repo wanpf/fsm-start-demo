@@ -43,7 +43,7 @@ kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-st
 
 #模拟外部客户端
 kubectl create namespace ext-curl
-kubectl apply -n ext-curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-fsm/curl.yaml
+kubectl apply -n ext-curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/ingress-fsm/curl.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
