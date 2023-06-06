@@ -44,35 +44,35 @@ export NODE_TOKEN=K107c1890ae060d191d347504740566f9c506b95ea908ba4795a7a82ea2c81
 curl -sfL https://get.k3s.io | K3S_URL=https://${MASTER_IP}:6443 K3S_TOKEN=${NODE_TOKEN} sh -
 ```
 
-### 下载 osm-edge CLI
+### 下载 fsm CLI
 
 ```shell
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.3
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-sudo cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+sudo cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-### 安装 osm-edge
+### 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.3 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enablePermissiveTrafficPolicy=true \
-    --set=osm.sidecarLogLevel=debug \
-    --set=osm.controllerLogLevel=warn \
-    --set=osm.trafficInterceptionMode=ebpf \
-    --set=osm.osmInterceptor.debug=true \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enablePermissiveTrafficPolicy=true \
+    --set=fsm.sidecarLogLevel=debug \
+    --set=fsm.controllerLogLevel=warn \
+    --set=fsm.trafficInterceptionMode=ebpf \
+    --set=fsm.fsmInterceptor.debug=true \
     --timeout=900s
 ```
 
@@ -81,9 +81,9 @@ osm install \
 ```bash
 #模拟业务服务
 kubectl create namespace ebpf
-osm namespace add ebpf
-kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/curl.yaml
-kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/pipy-ok.yaml
+fsm namespace add ebpf
+kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/interceptor/curl.yaml
+kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/interceptor/pipy-ok.yaml
 
 #让 Pod 分布到不同的 node 上
 kubectl patch deployments curl -n ebpf -p '{"spec":{"template":{"spec":{"nodeName":"node1"}}}}'

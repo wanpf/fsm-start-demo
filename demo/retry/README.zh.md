@@ -1,32 +1,32 @@
-# OSM Edge Retry 测试
+# FSM Retry 测试
 
-## 1. 下载并安装 osm-edge 命令行工具
+## 1. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge
+## 2. 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
-    --set=osm.enablePermissiveTrafficPolicy=true \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
+    --set=fsm.enablePermissiveTrafficPolicy=true \
     --timeout=900s
 ```
 
@@ -34,7 +34,7 @@ osm install \
 
 ### 3.1 技术概念
 
-在 OSM Edge 中支持到同一信任域中服务设置重试策略：
+在 FSM 中支持到同一信任域中服务设置重试策略：
 
 - 支持的协议：
   - http
@@ -42,8 +42,8 @@ osm install \
   - ServiceAccount
 - 支持的目的类型：
   - Service
-    - 被 OSM Edge 纳管的服务
-    - 未被 OSM Edge 纳管的服务
+    - 被 FSM 纳管的服务
+    - 未被 FSM 纳管的服务
       - 需要设置到目标服务的 Egress 策略
       - Egress 策略中 host 的格式为 servicename.namespace.svc.trustdomain
 
@@ -52,16 +52,16 @@ osm install \
 ```bash
 #模拟业务服务
 kubectl create namespace httpbin
-osm namespace add httpbin
-kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/retry/httpbin.yaml
+fsm namespace add httpbin
+kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/retry/httpbin.yaml
 
 kubectl create namespace httpbin-ext
-kubectl apply -n httpbin-ext -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/retry/httpbin.yaml
+kubectl apply -n httpbin-ext -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/retry/httpbin.yaml
 
 #模拟客户端
 kubectl create namespace retry
-osm namespace add retry
-kubectl apply -n retry -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/retry/curl.yaml
+fsm namespace add retry
+kubectl apply -n retry -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/retry/curl.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
@@ -69,13 +69,13 @@ kubectl wait --for=condition=ready pod -n httpbin-ext -l app=httpbin --timeout=1
 kubectl wait --for=condition=ready pod -n retry -l app=curl --timeout=180s
 ```
 
-### 3.3 场景测试一：重试到被 OSM Edge 纳管的服务
+### 3.3 场景测试一：重试到被 FSM 纳管的服务
 
 ### 3.3.1 启用重试策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":true}}}'  --type=merge
 ```
 
 ### 3.3.2 设置重试策略
@@ -132,7 +132,7 @@ connection: keep-alive
 
 ```bash
 curl_client="$(kubectl get pod -n retry -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
+fsm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
 ```
 
 统计指标值应不变化:
@@ -174,7 +174,7 @@ connection: keep-alive
 
 ```bash
 curl_client="$(kubectl get pod -n retry -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
+fsm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
 ```
 
 统计指标值应不变化:
@@ -191,18 +191,18 @@ cluster.httpbin/httpbin|14001.upstream_rq_retry_success: 0
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-kubeexport osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":false}}}'  --type=merge
+kubeexport fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":false}}}'  --type=merge
 kubectl delete retry -n retry retry
 ```
 
-### 3.4 场景测试二：重试到未被 OSM Edge 纳管的服务
+### 3.4 场景测试二：重试到未被 FSM 纳管的服务
 
 ### 3.4.1 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 ### 3.4.2 设置Egress目的策略模式
@@ -230,8 +230,8 @@ EOF
 ### 3.4.3 启用重试策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":true}}}'  --type=merge
 ```
 
 ### 3.4.4 设置重试策略
@@ -288,7 +288,7 @@ connection: keep-alive
 
 ```bash
 curl_client="$(kubectl get pod -n retry -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
+fsm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
 ```
 
 统计指标值应不变化:
@@ -330,7 +330,7 @@ connection: keep-alive
 
 ```bash
 curl_client="$(kubectl get pod -n retry -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
+fsm proxy get stats -n retry "$curl_client" | grep upstream_rq_retry
 ```
 
 统计指标值应不变化:
@@ -347,9 +347,9 @@ cluster.httpbin.httpbin-ext.svc.cluster.local:14001.upstream_rq_retry_success: 0
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-kubeexport osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":false}}}'  --type=merge
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":false}}}'  --type=merge
+kubeexport fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":false}}}'  --type=merge
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableRetryPolicy":false}}}'  --type=merge
 kubectl delete retry -n retry retry
 kubectl delete egress -n retry httpbin-14001
 ```

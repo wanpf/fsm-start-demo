@@ -1,6 +1,6 @@
 
 
-# OSM Edge&Merbridge集成测试
+# FSM&Merbridge集成测试
 
 ## 1.部署k8s环境
 
@@ -23,7 +23,7 @@
 ### 1.2 各虚拟机上部署容器环境
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-init.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-init.sh -O
 chmod u+x install-k8s-node-init.sh
 
 system=$(uname -s | tr [:upper:] [:lower:])
@@ -34,7 +34,7 @@ arch=$(dpkg --print-architecture)
 ### 1.3 各虚拟机上部署 k8s 工具
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-init-tools.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-init-tools.sh -O
 chmod u+x install-k8s-node-init-tools.sh
 
 system=$(uname -s | tr [:upper:] [:lower:])
@@ -47,7 +47,7 @@ source ~/.bashrc
 ### 1.4 Master节点启动 k8s 相关服务
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-master-start.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-master-start.sh -O
 chmod u+x install-k8s-node-master-start.sh
 
 #调整为你的 master 的 ip 地址
@@ -61,7 +61,7 @@ CNI=flannel
 ### 1.5 Node1&2节点启动 k8s 相关服务
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-worker-join.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-worker-join.sh -O
 chmod u+x install-k8s-node-worker-join.sh
 
 #调整为你的 master 的 ip 地址
@@ -76,59 +76,59 @@ MASTER_IP=192.168.127.80
 kubectl get pods -A -o wide
 ```
 
-## 2. 部署 osm-edge 服务
+## 2. 部署 fsm 服务
 
-### 2.1 下载并安装 osm-edge 命令行工具
+### 2.1 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.3
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-### 2.2 安装 osm-edge
+### 2.2 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.3 \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enablePermissiveTrafficPolicy=true \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enablePermissiveTrafficPolicy=true \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s
 ```
 
-如果部署 osm,指令参考:
+如果部署 fsm,指令参考:
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.2.3
-curl -L https://github.com/openservicemesh/osm/releases/download/${release}/osm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/openservicemesh/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.image.registry=openservicemesh \
-    --set=osm.image.tag=v1.2.3 \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enablePermissiveTrafficPolicy=true \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.image.registry=openservicemesh \
+    --set=fsm.image.tag=v1.2.3 \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enablePermissiveTrafficPolicy=true \
+    --set=fsm.controllerLogLevel=warn \
     --verbose \
     --timeout=900s
 ```
@@ -136,16 +136,16 @@ osm install \
 ## 3. 部署 Merbridge 服务
 
 ```
-curl -L https://raw.githubusercontent.com/merbridge/merbridge/main/deploy/all-in-one-osm.yaml -O
-sed -i 's/--cni-mode=false/--cni-mode=true/g' all-in-one-osm.yaml
-sed -i '/--cni-mode=true/a\\t\t- --debug=true' all-in-one-osm.yaml
-sed -i 's/\t/    /g' all-in-one-osm.yaml
-kubectl apply -f all-in-one-osm.yaml
+curl -L https://raw.githubusercontent.com/merbridge/merbridge/main/deploy/all-in-one-fsm.yaml -O
+sed -i 's/--cni-mode=false/--cni-mode=true/g' all-in-one-fsm.yaml
+sed -i '/--cni-mode=true/a\\t\t- --debug=true' all-in-one-fsm.yaml
+sed -i 's/\t/    /g' all-in-one-fsm.yaml
+kubectl apply -f all-in-one-fsm.yaml
 
 sleep 5s
-kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-selector spec.nodeName==master --timeout=1800s
-kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-selector spec.nodeName==node1 --timeout=1800s
-kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-selector spec.nodeName==node2 --timeout=1800s
+kubectl wait --for=condition=ready pod -n fsm-system -l app=merbridge --field-selector spec.nodeName==master --timeout=1800s
+kubectl wait --for=condition=ready pod -n fsm-system -l app=merbridge --field-selector spec.nodeName==node1 --timeout=1800s
+kubectl wait --for=condition=ready pod -n fsm-system -l app=merbridge --field-selector spec.nodeName==node2 --timeout=1800s
 ```
 
 ## 4. Merbridge 替代 iptables 测试
@@ -155,7 +155,7 @@ kubectl wait --for=condition=ready pod -n osm-system -l app=merbridge --field-se
 ```bash
 #模拟业务服务
 kubectl create namespace demo
-osm namespace add demo
+fsm namespace add demo
 kubectl apply -n demo -f https://raw.githubusercontent.com/istio/istio/master/samples/sleep/sleep.yaml
 kubectl apply -n demo -f https://raw.githubusercontent.com/istio/istio/master/samples/helloworld/helloworld.yaml
 

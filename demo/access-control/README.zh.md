@@ -1,33 +1,33 @@
 
 
-# OSM Edge访问控制策略测试
+# FSM访问控制策略测试
 
-## 1. 下载并安装 osm-edge 命令行工具
+## 1. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.2
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge
+## 2. 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=cybwan \
-    --set=osm.image.tag=1.3.2 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=error \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=cybwan \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=error \
     --timeout=900s
 ```
 
@@ -35,7 +35,7 @@ osm install \
 
 ### 3.1 技术概念
 
-在 OSM Edge 中从未被 OSM Edge 纳管的区域访问被 OSM Edge 纳管的区域，有两种方法：
+在 FSM 中从未被 FSM 纳管的区域访问被 FSM 纳管的区域，有两种方法：
 
 - Ingress，目前支持的 Ingress Controller：
   - FSM Pipy Ingress
@@ -52,12 +52,12 @@ osm install \
 ```bash
 #模拟业务服务
 kubectl create namespace httpbin
-osm namespace add httpbin
-kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/access-control/httpbin.yaml
+fsm namespace add httpbin
+kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/httpbin.yaml
 
 #模拟外部客户端
 kubectl create namespace curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/access-control/curl.yaml
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/curl.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
@@ -69,14 +69,14 @@ kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 #### 3.3.1 启用访问控制策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
 ```
 
 #### 3.3.2 设置基于服务的访问控制策略
 
 ```bash
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
 apiVersion: policy.openservicemesh.io/v1alpha1
@@ -114,18 +114,18 @@ content-type: application/json
 content-length: 267
 access-control-allow-origin: *
 access-control-allow-credentials: true
-osm-stats-namespace: httpbin
-osm-stats-kind: Deployment
-osm-stats-name: httpbin
-osm-stats-pod: httpbin-7c6464475-cf4qc
+fsm-stats-namespace: httpbin
+fsm-stats-kind: Deployment
+fsm-stats-name: httpbin
+fsm-stats-pod: httpbin-7c6464475-cf4qc
 connection: keep-alive
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
 kubectl delete accesscontrol -n httpbin httpbin
 ```
 
@@ -134,14 +134,14 @@ kubectl delete accesscontrol -n httpbin httpbin
 #### 3.4.1 启用访问控制策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
 ```
 
 #### 3.4.2 设置基于IP范围的访问控制策略
 
 ```bash
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 curl_pod_ip="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: AccessControl
@@ -179,18 +179,18 @@ content-type: application/json
 content-length: 267
 access-control-allow-origin: *
 access-control-allow-credentials: true
-osm-stats-namespace: httpbin
-osm-stats-kind: Deployment
-osm-stats-name: httpbin
-osm-stats-pod: httpbin-7c6464475-cf4qc
+fsm-stats-namespace: httpbin
+fsm-stats-kind: Deployment
+fsm-stats-name: httpbin
+fsm-stats-pod: httpbin-7c6464475-cf4qc
 connection: keep-alive
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
 kubectl delete accesscontrol -n httpbin httpbin
 ```
 
@@ -199,9 +199,9 @@ kubectl delete accesscontrol -n httpbin httpbin
 #### 3.5.1 启用访问控制策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
 ```
 
 #### 3.5.2 为客户端创建证书 Secret
@@ -226,7 +226,7 @@ EOF
 
 ```bash
 #模拟外部客户端
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/access-control/curl-mtls.yaml
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/curl-mtls.yaml
 
 #等待依赖的 POD 正常启动
 ```
@@ -234,7 +234,7 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 #### 3.5.4 设置基于服务的访问控制策略
 
 ```bash
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
 apiVersion: policy.openservicemesh.io/v1alpha1
@@ -276,19 +276,19 @@ content-type: application/json
 content-length: 267
 access-control-allow-origin: *
 access-control-allow-credentials: true
-osm-stats-namespace: httpbin
-osm-stats-kind: Deployment
-osm-stats-name: httpbin
-osm-stats-pod: httpbin-77dcf49495-tshft
+fsm-stats-namespace: httpbin
+fsm-stats-kind: Deployment
+fsm-stats-name: httpbin
+fsm-stats-pod: httpbin-77dcf49495-tshft
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/access-control/curl.yaml
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/curl.yaml
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
 kubectl delete accesscontrol -n httpbin httpbin
 kubectl delete accesscerts -n httpbin curl-mtls-cert
 ```
@@ -298,9 +298,9 @@ kubectl delete accesscerts -n httpbin curl-mtls-cert
 #### 3.6.1 启用访问控制策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
 ```
 
 #### 3.6.2 为客户端创建证书 Secret
@@ -325,7 +325,7 @@ EOF
 
 ```bash
 #模拟外部客户端
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/access-control/curl-mtls.yaml
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/curl-mtls.yaml
 
 #等待依赖的 POD 正常启动
 ```
@@ -333,7 +333,7 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 #### 3.6.4 设置基于IP范围的访问控制策略
 
 ```bash
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 curl_pod_ip="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: AccessControl
@@ -375,19 +375,19 @@ content-type: application/json
 content-length: 267
 access-control-allow-origin: *
 access-control-allow-credentials: true
-osm-stats-namespace: httpbin
-osm-stats-kind: Deployment
-osm-stats-name: httpbin
-osm-stats-pod: httpbin-77dcf49495-tshft
+fsm-stats-namespace: httpbin
+fsm-stats-kind: Deployment
+fsm-stats-name: httpbin
+fsm-stats-pod: httpbin-77dcf49495-tshft
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/access-control/curl.yaml
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/curl.yaml
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":false}}}'  --type=merge
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
 kubectl delete accesscontrol -n httpbin httpbin
 kubectl delete accesscerts -n httpbin curl-mtls-cert
 ```

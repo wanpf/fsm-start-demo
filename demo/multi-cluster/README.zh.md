@@ -1,14 +1,14 @@
-# OSM Edge 多集群测试
+# FSM 多集群测试
 
-## 1. 下载并安装 osm-edge 命令行工具
+## 1. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
 ## 2. 下载并安装 kubecm 命令行工具
@@ -29,7 +29,7 @@ helm repo update
 ### 3.2 部署控制平面集群和两个业务集群
 
 ```bash
-curl -o kind-with-registry.sh https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/kind-with-registry.sh
+curl -o kind-with-registry.sh https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/scripts/kind-with-registry.sh
 chmod u+x kind-with-registry.sh
 
 #调整为你的 Host 的 IP 地址
@@ -45,7 +45,7 @@ KIND_CLUSTER_NAME=cluster3 MAPPING_HOST_PORT=8093 API_SERVER_PORT=6448 ./kind-wi
 ### 3.3 部署 FSM 控制平面组件
 
 ```bash
-curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/scripts/deploy-fsm-control-plane.sh
+curl -o deploy-fsm-control-plane.sh https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/scripts/deploy-fsm-control-plane.sh
 chmod u+x deploy-fsm-control-plane.sh
 
 export FSM_NAMESPACE=flomesh
@@ -109,98 +109,98 @@ spec:
 EOF
 ```
 
-## 4. 安装 osm-edge
+## 4. 安装 fsm
 
-### 4.1 集群 1 安装 osm-edge
+### 4.1 集群 1 安装 fsm
 
 ```bash
 kubecm switch kind-cluster1
-export osm_namespace=osm-system
-export osm_mesh_name=osm
+export fsm_namespace=fsm-system
+export fsm_mesh_name=fsm
 dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s \
-    --set=osm.localDNSProxy.enable=true \
-    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
+    --set=fsm.localDNSProxy.enable=true \
+    --set=fsm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
 ```
 
-### 4.2 集群 2 安装 osm-edge
+### 4.2 集群 2 安装 fsm
 
 ```bash
 kubecm switch kind-cluster2
-export osm_namespace=osm-system
-export osm_mesh_name=osm
+export fsm_namespace=fsm-system
+export fsm_mesh_name=fsm
 dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s \
-    --set=osm.localDNSProxy.enable=true \
-    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
+    --set=fsm.localDNSProxy.enable=true \
+    --set=fsm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
 ```
 
-### 4.3 集群 3 安装 osm-edge
+### 4.3 集群 3 安装 fsm
 
 ```bash
 kubecm switch kind-cluster3
-export osm_namespace=osm-system
-export osm_mesh_name=osm
+export fsm_namespace=fsm-system
+export fsm_mesh_name=fsm
 dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s \
-    --set=osm.localDNSProxy.enable=true \
-    --set=osm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
+    --set=fsm.localDNSProxy.enable=true \
+    --set=fsm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
 ```
 
 ## 5. 多集群测试
 
 ### 5.1 部署模拟业务服务
 
-#### 5.1.1 集群 1 部署不被 osm edge 纳管的业务服务
+#### 5.1.1 集群 1 部署不被 fsm 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster1
 kubectl create namespace pipy
-kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/pipy-ok-c1.pipy.yaml
+kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/multi-cluster/pipy-ok-c1.pipy.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
 kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok-c1 --timeout=180s
 ```
 
-#### 5.1.2 集群 1 部署被 osm edge 纳管的业务服务
+#### 5.1.2 集群 1 部署被 fsm 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster1
-kubectl create namespace pipy-osm
-osm namespace add pipy-osm
-kubectl apply -n pipy-osm -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/pipy-ok-c1.pipy-osm.yaml
+kubectl create namespace pipy-fsm
+fsm namespace add pipy-fsm
+kubectl apply -n pipy-fsm -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/multi-cluster/pipy-ok-c1.pipy-fsm.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
-kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok-c1 --timeout=180s
+kubectl wait --for=condition=ready pod -n pipy-fsm -l app=pipy-ok-c1 --timeout=180s
 ```
 
 #### 5.1.3 集群 1 导出任意 SA 业务服务
@@ -236,58 +236,58 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm"
+      path: "/c1/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c1
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm-c1"
+      path: "/c1/ok-fsm-c1"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8091/c1/ok
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm-c1
 ```
 
-#### 5.1.4 集群 3 部署不被 osm edge 纳管的业务服务
+#### 5.1.4 集群 3 部署不被 fsm 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster3
 #kubectl create namespace pipy
-kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/pipy-ok-c3.pipy.yaml
+kubectl apply -n pipy -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/multi-cluster/pipy-ok-c3.pipy.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
 kubectl wait --for=condition=ready pod -n pipy -l app=pipy-ok-c3 --timeout=180s
 ```
 
-#### 5.1.5 集群 3 部署被 osm edge 纳管的业务服务
+#### 5.1.5 集群 3 部署被 fsm 纳管的业务服务
 
 ```bash
 kubecm switch kind-cluster3
-#kubectl create namespace pipy-osm
-osm namespace add pipy-osm
-kubectl apply -n pipy-osm -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/pipy-ok-c3.pipy-osm.yaml
+#kubectl create namespace pipy-fsm
+fsm namespace add pipy-fsm
+kubectl apply -n pipy-fsm -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/multi-cluster/pipy-ok-c3.pipy-fsm.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
-kubectl wait --for=condition=ready pod -n pipy-osm -l app=pipy-ok-c3 --timeout=180s
+kubectl wait --for=condition=ready pod -n pipy-fsm -l app=pipy-ok-c3 --timeout=180s
 ```
 
 #### 5.1.6 集群 3 导出任意 SA 业务服务
@@ -323,58 +323,58 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm"
+      path: "/c3/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c3
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm-c3"
+      path: "/c3/ok-fsm-c3"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8093/c3/ok
 curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm-c3
 ```
 
 #### 5.1.7 集群 2 导入业务服务
 
 ```bash
 kubecm switch kind-cluster2
-osm namespace add pipy-osm
+fsm namespace add pipy-fsm
 
 #创建完 Namespace, 补偿创建ServiceImporI,有延迟,需等待
 kubectl get serviceimports.flomesh.io -A
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok -o yaml
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok-c1 -o yaml
 kubectl get serviceimports.flomesh.io -n pipy pipy-ok-c3 -o yaml
-kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok -o yaml
-kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok-c1 -o yaml
-kubectl get serviceimports.flomesh.io -n pipy-osm pipy-ok-c3 -o yaml
+kubectl get serviceimports.flomesh.io -n pipy-fsm pipy-ok -o yaml
+kubectl get serviceimports.flomesh.io -n pipy-fsm pipy-ok-c1 -o yaml
+kubectl get serviceimports.flomesh.io -n pipy-fsm pipy-ok-c3 -o yaml
 ```
 
-#### 5.1.8 集群 2 部署被 osm edge 纳管的客户端
+#### 5.1.8 集群 2 部署被 fsm 纳管的客户端
 
 ```bash
 kubecm switch kind-cluster2
 kubectl create namespace curl
-osm namespace add curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/multi-cluster/curl.curl.yaml
+fsm namespace add curl
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/multi-cluster/curl.curl.yaml
 
 #等待依赖的 POD 正常启动
 sleep 3
@@ -419,7 +419,7 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   lbType: Locality
@@ -427,7 +427,7 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c1
 spec:
   lbType: Locality
@@ -435,7 +435,7 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c3
 spec:
   lbType: Locality
@@ -495,7 +495,7 @@ command terminated with exit code 7
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-fsm:8080/
 ```
 
 #### 5.2.9 测试结果
@@ -511,7 +511,7 @@ command terminated with exit code 7
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-fsm:8080/
 ```
 
 #### 5.2.11 测试结果
@@ -527,7 +527,7 @@ command terminated with exit code 7
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c3.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c3.pipy-fsm:8080/
 ```
 
 #### 5.2.13 测试结果
@@ -571,7 +571,7 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   lbType: ActiveActive
@@ -579,7 +579,7 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c1
 spec:
   lbType: ActiveActive
@@ -587,7 +587,7 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c3
 spec:
   lbType: ActiveActive
@@ -692,7 +692,7 @@ Hi, I am from Cluster3 !
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-fsm:8080/
 ```
 
 #### 5.2.22 测试结果
@@ -706,7 +706,7 @@ x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster1 and controlled by OSM !
+Hi, I am from Cluster1 and controlled by FSM !
 
 HTTP/1.1 200 OK
 server: pipy
@@ -714,7 +714,7 @@ x-pipy-upstream-service-time: 5
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster3 and controlled by OSM !
+Hi, I am from Cluster3 and controlled by FSM !
 
 HTTP/1.1 200 OK
 server: pipy
@@ -722,7 +722,7 @@ x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster1 and controlled by OSM !
+Hi, I am from Cluster1 and controlled by FSM !
 
 HTTP/1.1 200 OK
 server: pipy
@@ -730,7 +730,7 @@ x-pipy-upstream-service-time: 5
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster3 and controlled by OSM !
+Hi, I am from Cluster3 and controlled by FSM !
 ```
 
 #### 5.2.23 测试指令
@@ -738,7 +738,7 @@ Hi, I am from Cluster3 and controlled by OSM !
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c1.pipy-fsm:8080/
 ```
 
 #### 5.2.24 测试结果
@@ -752,7 +752,7 @@ x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster1 and controlled by OSM !
+Hi, I am from Cluster1 and controlled by FSM !
 ```
 
 #### 5.2.25 测试指令
@@ -760,7 +760,7 @@ Hi, I am from Cluster1 and controlled by OSM !
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c3.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok-c3.pipy-fsm:8080/
 ```
 
 #### 5.2.26 测试结果
@@ -774,7 +774,7 @@ x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster3 and controlled by OSM !
+Hi, I am from Cluster3 and controlled by FSM !
 ```
 
 本业务场景测试完毕，清理策略，以避免影响后续测试
@@ -785,9 +785,9 @@ kubectl get globaltrafficpolicies.flomesh.io -A
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c3
-kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok
-kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c1
-kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c3
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-fsm pipy-ok
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-fsm pipy-ok-c1
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-fsm pipy-ok-c3
 ```
 
 ### 5.3 场景测试二：导入集群存在同质无 SA 服务
@@ -796,7 +796,7 @@ kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok-c3
 
 ```bash
 kubecm switch kind-cluster2
-osm namespace add pipy
+fsm namespace add pipy
 cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -1042,7 +1042,7 @@ kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 
 ```bash
 kubecm switch kind-cluster2
-osm namespace add pipy
+fsm namespace add pipy
 cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: v1
 kind: ServiceAccount
@@ -1293,15 +1293,15 @@ kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 
 ```bash
 kubecm switch kind-cluster2
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":false}}}' --type=merge
 ```
 
 #### 5.5.2 部署有SA业务服务
 
 ```bash
 kubecm switch kind-cluster2
-osm namespace add pipy
+fsm namespace add pipy
 cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: v1
 kind: ServiceAccount
@@ -1413,11 +1413,11 @@ spec:
 EOF
 ```
 
-#### 5.5.6 设置流量策略[curl访问 pipy-ok.pipy-osm]
+#### 5.5.6 设置流量策略[curl访问 pipy-ok.pipy-fsm]
 
 ```
 kubecm switch kind-cluster2
-cat <<EOF | kubectl apply -n pipy-osm -f -
+cat <<EOF | kubectl apply -n pipy-fsm -f -
 apiVersion: specs.smi-spec.io/v1alpha4
 kind: HTTPRouteGroup
 metadata:
@@ -1430,16 +1430,16 @@ spec:
     - GET
 EOF
 
-cat <<EOF | kubectl apply -n pipy-osm -f -
+cat <<EOF | kubectl apply -n pipy-fsm -f -
 kind: TrafficTarget
 apiVersion: access.smi-spec.io/v1alpha3
 metadata:
-  name: curl-access-pipy-ok-osm
+  name: curl-access-pipy-ok-fsm
 spec:
   destination:
     kind: ServiceAccount
     name: pipy
-    namespace: pipy-osm
+    namespace: pipy-fsm
   rules:
   - kind: HTTPRouteGroup
     name: pipy-ok-service-routes
@@ -1479,7 +1479,7 @@ Hi, I am from Cluster2 !
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-fsm:8080/
 ```
 
 #### 5.5.13 测试结果
@@ -1525,33 +1525,33 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm"
+      path: "/c1/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c1
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm-c1"
+      path: "/c1/ok-fsm-c1"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8091/c1/ok
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm-c1
 ```
 
 ##### 5.5.14.2 集群 3 导出任意 SA 业务服务
@@ -1587,33 +1587,33 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm"
+      path: "/c3/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c3
 spec:
   serviceAccountName: "*"
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm-c3"
+      path: "/c3/ok-fsm-c3"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8093/c3/ok
 curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm-c3
 ```
 
 ##### 5.5.14.3 设置多集群流量负载均衡策略: ActiveActive
@@ -1633,14 +1633,14 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   lbType: ActiveActive
 EOF
 
 kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
-kubectl get globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy-fsm pipy-ok -o yaml
 ```
 
 ##### 5.5.14.4 测试指令
@@ -1690,7 +1690,7 @@ Hi, I am from Cluster3 !
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-fsm:8080/
 ```
 
 ##### 5.5.14.7 测试结果
@@ -1704,7 +1704,7 @@ x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster1 and controlled by OSM !
+Hi, I am from Cluster1 and controlled by FSM !
 
 HTTP/1.1 200 OK
 server: pipy
@@ -1712,7 +1712,7 @@ x-pipy-upstream-service-time: 4
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster3 and controlled by OSM !
+Hi, I am from Cluster3 and controlled by FSM !
 ```
 
 #### 5.5.15 场景测试四-2: 导出服务无 SA 测试
@@ -1748,31 +1748,31 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm"
+      path: "/c1/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c1
 spec:
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm-c1"
+      path: "/c1/ok-fsm-c1"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8091/c1/ok
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm-c1
 ```
 
 ##### 5.5.15.2 集群 3 导出无 SA 业务服务
@@ -1806,31 +1806,31 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm"
+      path: "/c3/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c3
 spec:
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm-c3"
+      path: "/c3/ok-fsm-c3"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8093/c3/ok
 curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm-c3
 ```
 
 ##### 5.5.15.3 设置多集群流量负载均衡策略: ActiveActive
@@ -1850,14 +1850,14 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   lbType: ActiveActive
 EOF
 
 kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
-kubectl get globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy-fsm pipy-ok -o yaml
 ```
 
 ##### 5.5.15.4 测试指令
@@ -1889,7 +1889,7 @@ Hi, I am from Cluster2 !
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-fsm:8080/
 ```
 
 ##### 5.5.15.7 测试结果
@@ -1935,33 +1935,33 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   serviceAccountName: pipy
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm"
+      path: "/c1/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c1
 spec:
   serviceAccountName: pipy
   rules:
     - portNumber: 8080
-      path: "/c1/ok-osm-c1"
+      path: "/c1/ok-fsm-c1"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8091/c1/ok
 curl -s http://$API_SERVER_ADDR:8091/c1/ok-c1
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm
-curl -s http://$API_SERVER_ADDR:8091/c1/ok-osm-c1
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm
+curl -s http://$API_SERVER_ADDR:8091/c1/ok-fsm-c1
 ```
 
 ##### 5.5.16.2 集群 3 导出特定 SA 业务服务
@@ -1997,33 +1997,33 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   serviceAccountName: pipy
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm"
+      path: "/c3/ok-fsm"
       pathType: Prefix
 ---
 apiVersion: flomesh.io/v1alpha1
 kind: ServiceExport
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok-c3
 spec:
   serviceAccountName: pipy
   rules:
     - portNumber: 8080
-      path: "/c3/ok-osm-c3"
+      path: "/c3/ok-fsm-c3"
       pathType: Prefix
 EOF
 
 kubectl get serviceexports.flomesh.io -A
 curl -s http://$API_SERVER_ADDR:8093/c3/ok
 curl -s http://$API_SERVER_ADDR:8093/c3/ok-c3
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm
-curl -s http://$API_SERVER_ADDR:8093/c3/ok-osm-c3
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm
+curl -s http://$API_SERVER_ADDR:8093/c3/ok-fsm-c3
 ```
 
 ##### 5.5.16.3 设置多集群流量负载均衡策略: ActiveActive
@@ -2043,14 +2043,14 @@ spec:
 apiVersion: flomesh.io/v1alpha1
 kind: GlobalTrafficPolicy
 metadata:
-  namespace: pipy-osm
+  namespace: pipy-fsm
   name: pipy-ok
 spec:
   lbType: ActiveActive
 EOF
 
 kubectl get globaltrafficpolicies.flomesh.io -n pipy pipy-ok -o yaml
-kubectl get globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok -o yaml
+kubectl get globaltrafficpolicies.flomesh.io -n pipy-fsm pipy-ok -o yaml
 ```
 
 ##### 5.5.16.4 测试指令
@@ -2100,7 +2100,7 @@ Hi, I am from Cluster3 !
 ```bash
 kubecm switch kind-cluster2
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-osm:8080/
+kubectl exec "${curl_client}" -n curl -c curl -- curl -si http://pipy-ok.pipy-fsm:8080/
 ```
 
 ##### 5.5.16.7 测试结果
@@ -2114,7 +2114,7 @@ x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster1 and controlled by OSM !
+Hi, I am from Cluster1 and controlled by FSM !
 
 HTTP/1.1 200 OK
 server: pipy
@@ -2122,7 +2122,7 @@ x-pipy-upstream-service-time: 3
 content-length: 46
 connection: keep-alive
 
-Hi, I am from Cluster3 and controlled by OSM !
+Hi, I am from Cluster3 and controlled by FSM !
 ```
 
 #### 5.5.17 场景测试四-4: 多集群流量负载均衡权重测试
@@ -2355,7 +2355,7 @@ Hi, I am from Cluster2 !
 
 ```bash
 kubecm switch kind-cluster2
-osm namespace add pipy
+fsm namespace add pipy
 cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -2424,7 +2424,7 @@ Hi, I am from Cluster1 !
 
 ```bash
 kubecm switch kind-cluster2
-osm namespace add pipy
+fsm namespace add pipy
 cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -2534,7 +2534,7 @@ Hi, I am from Cluster2 !
 
 ```bash
 kubecm switch kind-cluster2
-osm namespace add pipy
+fsm namespace add pipy
 cat <<EOF | kubectl apply -n pipy -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -2603,14 +2603,14 @@ kubectl get trafficsplits.split.smi-spec.io -A
 kubectl delete trafficsplits.split.smi-spec.io -n pipy pipy-ok-split
 kubectl get traffictargets.access.smi-spec.io -A
 kubectl delete traffictargets.access.smi-spec.io -n pipy curl-access-pipy-ok
-kubectl delete traffictargets.access.smi-spec.io -n pipy-osm curl-access-pipy-ok-osm
+kubectl delete traffictargets.access.smi-spec.io -n pipy-fsm curl-access-pipy-ok-fsm
 kubectl get httproutegroups.specs.smi-spec.io -A
 kubectl delete httproutegroups.specs.smi-spec.io -n pipy pipy-ok-service-routes
-kubectl delete httproutegroups.specs.smi-spec.io -n pipy-osm pipy-ok-service-routes
+kubectl delete httproutegroups.specs.smi-spec.io -n pipy-fsm pipy-ok-service-routes
 kubectl get globaltrafficpolicies.flomesh.io -A
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok
 kubectl delete globaltrafficpolicies.flomesh.io -n pipy pipy-ok-c1
-kubectl delete globaltrafficpolicies.flomesh.io -n pipy-osm pipy-ok
+kubectl delete globaltrafficpolicies.flomesh.io -n pipy-fsm pipy-ok
 kubectl delete deployments -n pipy pipy-ok
 kubectl delete service -n pipy pipy-ok
 kubectl delete serviceaccount -n pipy pipy

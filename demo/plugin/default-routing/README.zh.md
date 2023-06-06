@@ -4,8 +4,8 @@
 #### 1. 启用Plugin策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enablePluginPolicy":true}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enablePluginPolicy":true}}}' --type=merge
 ```
 
 #### 2 声明插件
@@ -339,7 +339,7 @@ spec:
       matchExpressions:
         - key: openservicemesh.io/monitored-by
           operator: In
-          values: ["osm"]
+          values: ["fsm"]
 EOF
 
 kubectl apply -f - <<EOF
@@ -357,7 +357,7 @@ spec:
       matchExpressions:
         - key: openservicemesh.io/monitored-by
           operator: In
-          values: ["osm"]
+          values: ["fsm"]
 EOF
 
 ```

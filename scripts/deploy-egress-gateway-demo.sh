@@ -4,7 +4,7 @@ set -aueo pipefail
 
 # shellcheck disable=SC1091
 
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 
 kubectl delete namespace curl --ignore-not-found
 kubectl delete namespace egress-gateway --ignore-not-found
@@ -22,8 +22,8 @@ kubectl apply -n egress-gateway -f demo/egress-gateway/custom-egress-gateway-con
 kubectl apply -n egress-gateway -f demo/egress-gateway/custom-egress-gateway-deployment.yaml
 
 kubectl create namespace curl
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
-$OSM/bin/osm namespace add curl
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+$FSM/bin/fsm namespace add curl
 
 # Deploy curl client in the curl namespace
 kubectl apply -f demo/egress-gateway/curl.yaml -n curl

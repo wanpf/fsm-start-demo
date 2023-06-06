@@ -1,31 +1,31 @@
-# OSM Edge 双臂 mTLS 测试
+# FSM 双臂 mTLS 测试
 
-## 1. 下载并安装 osm-edge 命令行工具
+## 1. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge
+## 2. 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s
 ```
 
@@ -33,23 +33,23 @@ osm install \
 
 ### 3.1 技术概念
 
-<img src="https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-access-control/Bidirectional_mTLS.png" alt="Bidirectional_mTLS" style="zoom:80%;" />
+<img src="https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-access-control/Bidirectional_mTLS.png" alt="Bidirectional_mTLS" style="zoom:80%;" />
 
 ### 3.2 部署业务 POD
 
 ```bash
 #模拟时间服务
 kubectl create namespace egress-server
-kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-access-control/server.yaml
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-access-control/server.yaml
 
 #模拟中间件服务
 kubectl create namespace bidi-mtls-middle
-osm namespace add bidi-mtls-middle
-kubectl apply -n bidi-mtls-middle -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-access-control/middle.yaml
+fsm namespace add bidi-mtls-middle
+kubectl apply -n bidi-mtls-middle -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-access-control/middle.yaml
 
 #模拟外部客户端
 kubectl create namespace bidi-mtls-client
-kubectl apply -n bidi-mtls-client -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-access-control/client.yaml
+kubectl apply -n bidi-mtls-client -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-access-control/client.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n egress-server -l app=server --timeout=180s
@@ -62,15 +62,15 @@ kubectl wait --for=condition=ready pod -n bidi-mtls-client -l app=client --timeo
 #### 3.3.1 启用访问控制策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
 ```
 
 #### 3.3.2 启用证书颁发策略
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":true}}}'  --type=merge
 ```
 
 #### 3.3.3 为客户端创建证书 Secret
@@ -95,7 +95,7 @@ EOF
 
 ```bash
 #模拟外部客户端
-kubectl apply -n bidi-mtls-client -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-access-control/client-mtls.yaml
+kubectl apply -n bidi-mtls-client -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-access-control/client-mtls.yaml
 
 #等待依赖的 POD 正常启动
 ```
@@ -103,7 +103,7 @@ kubectl apply -n bidi-mtls-client -f https://raw.githubusercontent.com/cybwan/os
 #### 3.3.5 设置基于服务的访问控制策略
 
 ```bash
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
 apiVersion: policy.openservicemesh.io/v1alpha1
@@ -146,10 +146,10 @@ HTTP/2 200
 date: Tue, 11 Oct 2022 13:55:28 GMT
 content-length: 13
 content-type: text/plain; charset=utf-8
-osm-stats-namespace: bidi-mtls-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-rwlr8
+fsm-stats-namespace: bidi-mtls-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-rwlr8
 
 hello world.
 ```
@@ -157,15 +157,15 @@ hello world.
 #### 4.3.8 禁用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 4.3.9 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 4.3.10 创建Egress mTLS Secret
@@ -190,7 +190,7 @@ EOF
 
 ```bash
 #模拟时间服务
-kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-access-control/server-mtls.yaml
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-access-control/server-mtls.yaml
 
 #等待依赖的 POD 正常启动
 ```
@@ -210,7 +210,7 @@ spec:
     name: middle
     namespace: bidi-mtls-middle
     mtls:
-      issuer: osm
+      issuer: fsm
   hosts:
   - server.egress-server.svc.cluster.local
   ports:
@@ -238,10 +238,10 @@ HTTP/2 200
 date: Tue, 11 Oct 2022 13:56:26 GMT
 content-length: 74
 content-type: text/plain; charset=utf-8
-osm-stats-namespace: bidi-mtls-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-rwlr8
+fsm-stats-namespace: bidi-mtls-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-rwlr8
 
 The current time: 2022-10-11 13:56:26.616686218 +0000 UTC m=+16.808331102
 ```
@@ -249,8 +249,8 @@ The current time: 2022-10-11 13:56:26.616686218 +0000 UTC m=+16.808331102
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessCertPolicy":false}}}'  --type=merge
 
 kubectl delete AccessCert -n bidi-mtls-middle client-mtls-cert
 kubectl delete AccessControl -n bidi-mtls-middle client2middle

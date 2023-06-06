@@ -4,12 +4,12 @@ set -aueo pipefail
 
 # shellcheck disable=SC1091
 
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 
 kubectl delete namespace udp-demo --ignore-not-found
 kubectl create namespace udp-demo
 
-$OSM/bin/osm namespace --mesh-name "osm" add udp-demo
+$FSM/bin/fsm namespace --mesh-name "fsm" add udp-demo
 
 kubectl apply -f demo/udp-echo/udp-echo-rbac.yaml -n udp-demo
 kubectl apply -f demo/udp-echo/udp-echo-service.yaml -n udp-demo

@@ -1,6 +1,6 @@
 
 
-# OSM Edge eBPF 测试
+# FSM eBPF 测试
 
 ## 1.部署k8s环境
 
@@ -23,7 +23,7 @@
 ### 1.2 各虚拟机上部署容器环境
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-init.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-init.sh -O
 chmod u+x install-k8s-node-init.sh
 
 system=$(uname -s | tr [:upper:] [:lower:])
@@ -34,7 +34,7 @@ arch=$(dpkg --print-architecture)
 ### 1.3 各虚拟机上部署 k8s 工具
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-init-tools.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-init-tools.sh -O
 chmod u+x install-k8s-node-init-tools.sh
 
 system=$(uname -s | tr [:upper:] [:lower:])
@@ -47,7 +47,7 @@ source ~/.bashrc
 ### 1.4 Master节点启动 k8s 相关服务
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-master-start.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-master-start.sh -O
 chmod u+x install-k8s-node-master-start.sh
 
 #调整为你的 master 的 ip 地址
@@ -61,7 +61,7 @@ CNI=flannel
 ### 1.5 Node1&2节点启动 k8s 相关服务
 
 ```bash
-curl -L https://raw.githubusercontent.com/cybwan/osm-edge-scripts/main/scripts/install-k8s-node-worker-join.sh -O
+curl -L https://raw.githubusercontent.com/cybwan/fsm-scripts/main/scripts/install-k8s-node-worker-join.sh -O
 chmod u+x install-k8s-node-worker-join.sh
 
 #调整为你的 master 的 ip 地址
@@ -75,35 +75,35 @@ MASTER_IP=192.168.127.80
 kubectl get pods -A -o wide
 ```
 
-## 2. 下载并安装 osm-edge 命令行工具
+## 2. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.3
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 3. 安装 osm-edge
+## 3. 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.3 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enablePermissiveTrafficPolicy=true \
-    --set=osm.sidecarLogLevel=debug \
-    --set=osm.controllerLogLevel=warn \
-    --set=osm.trafficInterceptionMode=ebpf \
-    --set=osm.osmInterceptor.debug=true \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enablePermissiveTrafficPolicy=true \
+    --set=fsm.sidecarLogLevel=debug \
+    --set=fsm.controllerLogLevel=warn \
+    --set=fsm.trafficInterceptionMode=ebpf \
+    --set=fsm.fsmInterceptor.debug=true \
     --timeout=900s
 ```
 
@@ -114,9 +114,9 @@ osm install \
 ```bash
 #模拟业务服务
 kubectl create namespace ebpf
-osm namespace add ebpf
-kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/curl.yaml
-kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/interceptor/pipy-ok.yaml
+fsm namespace add ebpf
+kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/interceptor/curl.yaml
+kubectl apply -n ebpf -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/interceptor/pipy-ok.yaml
 
 #让 Pod 分布到不同的 node 上
 kubectl patch deployments pipy-ok-v1 -n ebpf -p '{"spec":{"template":{"spec":{"nodeName":"node1"}}}}'

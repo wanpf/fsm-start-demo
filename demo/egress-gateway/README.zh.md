@@ -1,32 +1,32 @@
-# OSM Edge Egress Gateway 测试
+# FSM Egress Gateway 测试
 
-## 1. 下载并安装 osm-edge 命令行工具
+## 1. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/cybwan/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge
+## 2. 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enableEgress=false \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enableEgress=false \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s
 ```
 
@@ -34,7 +34,7 @@ osm install \
 
 ### 3.1 技术概念
 
-在 OSM Edge 中 Egress 的策略有两类:
+在 FSM 中 Egress 的策略有两类:
 
 - 目的控制策略
   - **宽松模式**：放行所有外部流量
@@ -59,8 +59,8 @@ osm install \
 
 ```bash
 kubectl create namespace curl
-osm namespace add curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/curl.yaml
+fsm namespace add curl
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/egress-gateway/curl.yaml
 ```
 
 #### 3.2.2 部署全局出口代理网关
@@ -115,8 +115,8 @@ kubectl wait --for=condition=ready pod -n fsm -l app=fsm-egress-gateway --timeou
 #### 3.3.1 禁用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 3.3.2 测试指令
@@ -136,8 +136,8 @@ command terminated with exit code 7
 #### 3.3.4  启用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
 ```
 
 #### 3.3.5 测试指令
@@ -164,8 +164,8 @@ Access-Control-Allow-Credentials: true
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 ### 3.4 场景测试二：目的策略模式+边车透传
@@ -173,8 +173,8 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traff
 #### 3.4.1 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 3.4.2 测试指令
@@ -261,8 +261,8 @@ kubectl delete egress -n curl httpbin-80
 #### 3.5.1 启用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
 ```
 
 #### 3.5.2 设置全局出口代理网关策略
@@ -330,8 +330,8 @@ kubectl logs -n fsm "$(kubectl get pod -n fsm -l app=fsm-egress-gateway -o jsonp
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
 kubectl delete egressgateways -n curl global-egress-gateway
 ```
@@ -341,15 +341,15 @@ kubectl delete egressgateways -n curl global-egress-gateway
 #### 3.6.1 禁用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 3.6.2 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 3.6.3 设置Egress目的策略
@@ -447,8 +447,8 @@ connection: keep-alive
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
 kubectl delete egress -n curl httpbin-80
 kubectl delete egressgateways -n curl global-egress-gateway

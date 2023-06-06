@@ -2,7 +2,7 @@
 
 ## 1. 部署 k8s 环境
 
-参考: https://github.com/cybwan/osm-edge-start-demo/blob/main/demo/interceptor/README.zh.md
+参考: https://github.com/cybwan/fsm-start-demo/blob/main/demo/interceptor/README.zh.md
 
 ## 2. 下载并安装 ecnet 命令行工具
 

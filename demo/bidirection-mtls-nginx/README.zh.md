@@ -1,31 +1,31 @@
-# OSM Edge 双臂 mTLS 测试
+# FSM 双臂 mTLS 测试
 
-## 1. 下载并安装 osm-edge 命令行工具
+## 1. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge
+## 2. 安装 fsm
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s
 ```
 
@@ -60,23 +60,23 @@ kubectl wait --namespace ingress-nginx \
 
 ### 4.1 技术概念
 
-<img src="https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-nginx/Bidirectional_mTLS.png" alt="Bidirectional_mTLS" style="zoom:80%;" />
+<img src="https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-nginx/Bidirectional_mTLS.png" alt="Bidirectional_mTLS" style="zoom:80%;" />
 
 ### 4.2 部署业务 POD
 
 ```bash
 #模拟时间服务
 kubectl create namespace egress-server
-kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-nginx/server.yaml
+kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-nginx/server.yaml
 
 #模拟中间件服务
 kubectl create namespace egress-middle
-osm namespace add egress-middle
-kubectl apply -n egress-middle -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-nginx/middle.yaml
+fsm namespace add egress-middle
+kubectl apply -n egress-middle -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-nginx/middle.yaml
 
 #模拟外部客户端
 kubectl create namespace egress-client
-kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/bidirection-mtls-nginx/client.yaml
+kubectl apply -n egress-client -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/bidirection-mtls-nginx/client.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n egress-server -l app=server --timeout=180s
@@ -182,10 +182,10 @@ Date: Sun, 09 Oct 2022 08:37:18 GMT
 Content-Type: text/plain; charset=utf-8
 Content-Length: 13
 Connection: keep-alive
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 
 hello world.
 ```
@@ -193,15 +193,15 @@ hello world.
 #### 4.3.7 禁用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 4.3.8 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 4.3.9 创建Egress mTLS Secret
@@ -211,7 +211,7 @@ curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
-kubectl create secret generic -n osm-system egress-middle-cert \
+kubectl create secret generic -n fsm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \
   --from-file=tls.crt=./middle.crt \
   --from-file=tls.key=./middle.key 
@@ -238,7 +238,7 @@ spec:
         expiration: 2030-1-1 00:00:00
         secret:
           name: egress-middle-cert
-          namespace: osm-system
+          namespace: fsm-system
   hosts:
   - server.egress-server.svc.cluster.local
   ports:
@@ -267,10 +267,10 @@ Date: Sun, 09 Oct 2022 08:38:03 GMT
 Content-Type: text/plain; charset=utf-8
 Content-Length: 74
 Connection: keep-alive
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 
 The current time: 2022-10-09 08:38:03.03610171 +0000 UTC m=+107.351638075
 ```
@@ -281,7 +281,7 @@ The current time: 2022-10-09 08:38:03.03610171 +0000 UTC m=+107.351638075
 kubectl delete ingress -n egress-middle egress-middle
 kubectl delete ingressbackend -n egress-middle egress-middle
 kubectl delete egress -n egress-middle server-8443
-kubectl delete secrets -n osm-system egress-middle-cert
+kubectl delete secrets -n fsm-system egress-middle-cert
 ```
 
 ### 4.4 场景测试二：HTTP Nginx & mTLS Ingress & mTLS Egress
@@ -319,8 +319,8 @@ Connection: keep-alive
 #### 4.4.3 设置 Ingress Controller 证书上下文
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"osm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"fsm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
 ```
 
 #### 4.4.4 设置 Ingress 策略
@@ -337,7 +337,7 @@ metadata:
     # proxy_ssl_name for a service is of the form <service-account>.<namespace>.cluster.local
     nginx.ingress.kubernetes.io/configuration-snippet: |
       proxy_ssl_name "middle.egress-middle.cluster.local";
-    nginx.ingress.kubernetes.io/proxy-ssl-secret: "osm-system/ingress-controller-cert"
+    nginx.ingress.kubernetes.io/proxy-ssl-secret: "fsm-system/ingress-controller-cert"
     nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
 spec:
   ingressClassName: nginx
@@ -400,10 +400,10 @@ Date: Sun, 09 Oct 2022 08:39:02 GMT
 Content-Type: text/plain; charset=utf-8
 Content-Length: 13
 Connection: keep-alive
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 
 hello world.
 ```
@@ -411,15 +411,15 @@ hello world.
 #### 4.4.8 禁用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 4.4.9 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 4.4.10 创建Egress mTLS Secret
@@ -429,7 +429,7 @@ curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
-kubectl create secret generic -n osm-system egress-middle-cert \
+kubectl create secret generic -n fsm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \
   --from-file=tls.crt=./middle.crt \
   --from-file=tls.key=./middle.key 
@@ -456,7 +456,7 @@ spec:
         expiration: 2030-1-1 00:00:00
         secret:
           name: egress-middle-cert
-          namespace: osm-system
+          namespace: fsm-system
   hosts:
   - server.egress-server.svc.cluster.local
   ports:
@@ -485,10 +485,10 @@ Date: Sun, 09 Oct 2022 08:39:42 GMT
 Content-Type: text/plain; charset=utf-8
 Content-Length: 75
 Connection: keep-alive
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 
 The current time: 2022-10-09 08:39:42.336230168 +0000 UTC m=+206.716581170
 ```
@@ -496,13 +496,13 @@ The current time: 2022-10-09 08:39:42.336230168 +0000 UTC m=+206.716581170
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":null}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"certificate":{"ingressGateway":null}}}' --type=merge
 
 kubectl delete ingress -n egress-middle egress-middle
 kubectl delete ingressbackend -n egress-middle egress-middle
 kubectl delete egress -n egress-middle server-8443
-kubectl delete secrets -n osm-system egress-middle-cert
+kubectl delete secrets -n fsm-system egress-middle-cert
 ```
 
 ### 4.5 场景测试三：TLS Nginx & mTLS Ingress & mTLS Egress
@@ -540,8 +540,8 @@ Connection: keep-alive
 #### 4.5.3 设置 Ingress Controller 证书上下文
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"osm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"fsm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
 ```
 
 #### 4.5.4 创建 Nginx TLS Secret
@@ -569,7 +569,7 @@ metadata:
     # proxy_ssl_name for a service is of the form <service-account>.<namespace>.cluster.local
     nginx.ingress.kubernetes.io/configuration-snippet: |
       proxy_ssl_name "middle.egress-middle.cluster.local";
-    nginx.ingress.kubernetes.io/proxy-ssl-secret: "osm-system/ingress-controller-cert"
+    nginx.ingress.kubernetes.io/proxy-ssl-secret: "fsm-system/ingress-controller-cert"
     nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
 spec:
   ingressClassName: nginx
@@ -635,10 +635,10 @@ HTTP/2 200
 date: Sun, 09 Oct 2022 08:40:40 GMT
 content-type: text/plain; charset=utf-8
 content-length: 13
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
 hello world.
@@ -647,15 +647,15 @@ hello world.
 #### 4.5.9 禁用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 4.5.10 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 4.5.11 创建Egress mTLS Secret
@@ -665,7 +665,7 @@ curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
-kubectl create secret generic -n osm-system egress-middle-cert \
+kubectl create secret generic -n fsm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \
   --from-file=tls.crt=./middle.crt \
   --from-file=tls.key=./middle.key 
@@ -692,7 +692,7 @@ spec:
         expiration: 2030-1-1 00:00:00
         secret:
           name: egress-middle-cert
-          namespace: osm-system
+          namespace: fsm-system
   hosts:
   - server.egress-server.svc.cluster.local
   ports:
@@ -720,10 +720,10 @@ HTTP/2 200
 date: Sun, 09 Oct 2022 08:41:21 GMT
 content-type: text/plain; charset=utf-8
 content-length: 75
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
 The current time: 2022-10-09 08:41:21.121578846 +0000 UTC m=+305.588353001
@@ -732,13 +732,13 @@ The current time: 2022-10-09 08:41:21.121578846 +0000 UTC m=+305.588353001
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":null}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"certificate":{"ingressGateway":null}}}' --type=merge
 
 kubectl delete ingress -n egress-middle egress-middle
 kubectl delete ingressbackend -n egress-middle egress-middle
 kubectl delete egress -n egress-middle server-8443
-kubectl delete secrets -n osm-system egress-middle-cert
+kubectl delete secrets -n fsm-system egress-middle-cert
 kubectl delete secrets -n egress-middle nginx-cert-secret
 ```
 
@@ -777,8 +777,8 @@ Connection: keep-alive
 #### 4.6.3 设置 Ingress Controller 证书上下文
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"osm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"certificate":{"ingressGateway":{"secret":{"name":"ingress-controller-cert","namespace":"fsm-system"},"subjectAltNames":["ingress-nginx.ingress-nginx.cluster.local"],"validityDuration":"24h"}}}}' --type=merge
 ```
 
 #### 4.6.4 创建 Nginx CA Secret
@@ -819,7 +819,7 @@ metadata:
     # proxy_ssl_name for a service is of the form <service-account>.<namespace>.cluster.local
     nginx.ingress.kubernetes.io/configuration-snippet: |
       proxy_ssl_name "middle.egress-middle.cluster.local";
-    nginx.ingress.kubernetes.io/proxy-ssl-secret: "osm-system/ingress-controller-cert"
+    nginx.ingress.kubernetes.io/proxy-ssl-secret: "fsm-system/ingress-controller-cert"
     nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
 spec:
   ingressClassName: nginx
@@ -885,10 +885,10 @@ HTTP/2 200
 date: Sun, 09 Oct 2022 08:42:37 GMT
 content-type: text/plain; charset=utf-8
 content-length: 13
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
 hello world.
@@ -897,15 +897,15 @@ hello world.
 #### 4.6.10 禁用Egress目的宽松模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 4.6.11 启用Egress目的策略模式
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 4.6.12 创建Egress mTLS Secret
@@ -915,7 +915,7 @@ curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/ca.crt -
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.crt -o middle.crt
 curl https://raw.githubusercontent.com/cybwan/mtls-time-demo/main/certs/middle.key -o middle.key
 
-kubectl create secret generic -n osm-system egress-middle-cert \
+kubectl create secret generic -n fsm-system egress-middle-cert \
   --from-file=ca.crt=./ca.crt \
   --from-file=tls.crt=./middle.crt \
   --from-file=tls.key=./middle.key 
@@ -942,7 +942,7 @@ spec:
         expiration: 2030-1-1 00:00:00
         secret:
           name: egress-middle-cert
-          namespace: osm-system
+          namespace: fsm-system
   hosts:
   - server.egress-server.svc.cluster.local
   ports:
@@ -970,10 +970,10 @@ HTTP/2 200
 date: Sun, 09 Oct 2022 08:43:13 GMT
 content-type: text/plain; charset=utf-8
 content-length: 75
-osm-stats-namespace: egress-middle
-osm-stats-kind: Deployment
-osm-stats-name: middle
-osm-stats-pod: middle-5fc9f7b8b5-7txmc
+fsm-stats-namespace: egress-middle
+fsm-stats-kind: Deployment
+fsm-stats-name: middle
+fsm-stats-pod: middle-5fc9f7b8b5-7txmc
 strict-transport-security: max-age=15724800; includeSubDomains
 
 The current time: 2022-10-09 08:43:13.241006879 +0000 UTC m=+417.741653620
@@ -982,13 +982,13 @@ The current time: 2022-10-09 08:43:13.241006879 +0000 UTC m=+417.741653620
 本业务场景测试完毕，清理策略，以避免影响后续测试
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"certificate":{"ingressGateway":null}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"certificate":{"ingressGateway":null}}}' --type=merge
 
 kubectl delete ingress -n egress-middle egress-middle
 kubectl delete ingressbackend -n egress-middle egress-middle
 kubectl delete egress -n egress-middle server-8443
-kubectl delete secrets -n osm-system egress-middle-cert
+kubectl delete secrets -n fsm-system egress-middle-cert
 kubectl delete secrets -n egress-middle nginx-cert-secret
 kubectl delete secrets -n egress-middle nginx-ca-secret
 ```

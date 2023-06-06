@@ -5,7 +5,7 @@ set -o nounset
 set -o pipefail
 
 # desired cluster name; default is "kind"
-KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-osm}"
+KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-fsm}"
 MAPPING_HOST_PORT="${MAPPING_HOST_PORT:-8090}"
 API_SERVER_ADDR="${API_SERVER_ADDR:-0.0.0.0}"
 API_SERVER_PORT="${API_SERVER_PORT:-6445}"

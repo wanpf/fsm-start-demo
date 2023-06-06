@@ -3,7 +3,7 @@
 set -euo pipefail
 
 if [ -z "$1" ]; then
-  echo "Error: expected one argument OSM Edge Demo's Repo"
+  echo "Error: expected one argument FSM Demo's Repo"
   exit 1
 fi
 

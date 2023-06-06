@@ -1,32 +1,32 @@
-# OSM Edge Egress Gateway Test
+# FSM Egress Gateway Test
 
-## 1. Download and install the `osm-edge` command line tool
+## 1. Download and install the `fsm` command line tool
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. Install `osm-edge` and `FSM Ingress`
+## 2. Install `fsm` and `FSM Ingress`
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enableEgress=false \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enableEgress=false \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --set=fsm.enabled=true \
     --timeout=900s
 ```
@@ -35,7 +35,7 @@ osm install \
 
 ### 3.1 Technical concepts
 
-There are two types of policies for Egress in OSM Edge:
+There are two types of policies for Egress in FSM:
 
 - Destination Control Policies
   - **Permissive Mode**: Release all external traffic
@@ -58,8 +58,8 @@ A combination of policies that can satisfy four business scenarios.
 
 ```bash
 kubectl create namespace curl
-osm namespace add curl
-kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/curl.yaml
+fsm namespace add curl
+kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/egress-gateway/curl.yaml
 ```
 
 #### 3.2.2 Deploying the Global Egress Gateway
@@ -67,10 +67,10 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start
 ```bash
 # Ignore possible duplicate namespace creation errors
 kubectl create namespace egress-gateway
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-rbac.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-service.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-configmap.yaml
-kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/egress-gateway/global-egress-gateway-deployment.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/egress-gateway/global-egress-gateway-rbac.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/egress-gateway/global-egress-gateway-service.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/egress-gateway/global-egress-gateway-configmap.yaml
+kubectl apply -n egress-gateway -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/egress-gateway/global-egress-gateway-deployment.yaml
 ```
 
 #### 3.2.3 Wait for dependent PODs to start properly
@@ -85,8 +85,8 @@ kubectl wait --for=condition=ready pod -n egress-gateway -l app=global-egress-ga
 #### 3.3.1 Disabling Egress destination permissive mode
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 3.3.2 Test commands
@@ -106,8 +106,8 @@ command terminated with exit code 52
 #### 3.3.4  Enabling Egress permissive mode
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
 ```
 
 #### 3.3.5 Test Commands
@@ -134,8 +134,8 @@ Access-Control-Allow-Credentials: true
 This business scenario is tested and the strategy is cleaned up to avoid affecting subsequent tests
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 ### 3.4 Scenario test case#2: Destination policy mode + side car pass-through
@@ -143,8 +143,8 @@ kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traff
 #### 3.4.1 Enable Egress destination policy mode
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 3.4.2 Test Commands
@@ -231,8 +231,8 @@ kubectl delete egress -n curl httpbin-80
 #### 3.5.1 Enabling Egress destination permissive mode
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":true}}}' --type=merge
 ```
 
 #### 3.5.2 Setting the Global Egress Proxy Gateway Policy
@@ -309,8 +309,8 @@ kubectl logs -n egress-gateway "$(kubectl get pod -n egress-gateway -l app=globa
 This business scenario is tested and the strategy is cleaned up to avoid affecting subsequent tests
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
 kubectl delete egressgateways -n egress-gateway global-egress-gateway
 ```
@@ -320,15 +320,15 @@ kubectl delete egressgateways -n egress-gateway global-egress-gateway
 #### 3.6.1 Disabling Egress destination permissive mode
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 ```
 
 #### 3.6.2 Enabling Egress Destination Policy Mode
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableEgressPolicy":true}}}'  --type=merge
 ```
 
 #### 3.6.3 Setting the Egress destination policy
@@ -435,8 +435,8 @@ connection: keep-alive
 This business scenario is tested and the strategy is cleaned up to avoid affecting subsequent tests
 
 ```bash
-export osm_namespace=osm-system
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
+export fsm_namespace=fsm-system
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enableEgress":false}}}' --type=merge
 
 kubectl delete egress -n curl httpbin-80
 kubectl delete egressgateways -n egress-gateway global-egress-gateway

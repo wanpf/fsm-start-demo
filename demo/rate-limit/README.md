@@ -1,34 +1,34 @@
 
 
-## OSM Edge Rate Limit Test
+## FSM Rate Limit Test
 
-## 1. Download and install the osm-edge command line tool
+## 1. Download and install the fsm command line tool
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. Install `osm-edge` Service mesh
+## 2. Install `fsm` Service mesh
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enableEgress=false \
-    --set=osm.sidecarLogLevel=debug \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enableEgress=false \
+    --set=fsm.sidecarLogLevel=debug \
+    --set=fsm.controllerLogLevel=warn \
     --timeout=900s
 ```
 
@@ -36,7 +36,7 @@ osm install \
 
 ### 3.1 Technical concepts
 
- OSM Edge supports below listed rate limiting scenarios
+ FSM supports below listed rate limiting scenarios
 
 - Layer 4 TCP rate limiting.
   - Trigger conditions
@@ -65,16 +65,16 @@ osm install \
 
 ```bash
 #Set permissive mode
-export osm_namespace=osm-system 
-kubectl patch meshconfig osm-mesh-config -n "$osm_namespace" -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":true}}}'  --type=merge
+export fsm_namespace=fsm-system 
+kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":true}}}'  --type=merge
 
 #Simulate business service
 kubectl create namespace ratelimit
-osm namespace add ratelimit
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/rate-limit/fortio.yaml -n ratelimit
+fsm namespace add ratelimit
+kubectl apply -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/rate-limit/fortio.yaml -n ratelimit
 
 #Simulate client
-kubectl apply -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/rate-limit/fortio-client.yaml -n ratelimit
+kubectl apply -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/rate-limit/fortio-client.yaml -n ratelimit
 
 #Wait for POD to start properly
 kubectl wait --for=condition=ready pod -n ratelimit -l app=fortio --timeout=180s
@@ -221,7 +221,7 @@ All done 10 calls (plus 0 warmup) 3.362 ms avg, 851.4 qps
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep fortio_8078_tcp.rate_limited
+fsm proxy get stats "$fortio_server" -n ratelimit | grep fortio_8078_tcp.rate_limited
 ```
 
 Search results:
@@ -301,7 +301,7 @@ All done 10 calls (plus 0 warmup) 2.364 ms avg, 1137.8 qps
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep fortio_8078_tcp.rate_limited
+fsm proxy get stats "$fortio_server" -n ratelimit | grep fortio_8078_tcp.rate_limited
 ```
 
 Search Results:
@@ -471,7 +471,7 @@ Code 429 : 7 (70.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:
@@ -557,7 +557,7 @@ Code 200 : 10 (100.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Result:
@@ -679,7 +679,7 @@ Code 509 : 7 (70.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:
@@ -815,7 +815,7 @@ Code 429 : 7 (70.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:
@@ -902,7 +902,7 @@ Code 200 : 10 (100.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:
@@ -1024,7 +1024,7 @@ Code 509 : 7 (70.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:
@@ -1162,7 +1162,7 @@ Code 429 : 7 (70.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:
@@ -1251,7 +1251,7 @@ Code 200 : 10 (100.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:
@@ -1376,7 +1376,7 @@ Code 509 : 7 (70.0 %)
 
 ```bash
 fortio_server="$(kubectl get pod -n ratelimit -l app=fortio -o jsonpath='{.items[0].metadata.name}')"
-osm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
+fsm proxy get stats "$fortio_server" -n ratelimit | grep http_local_rate_limiter.http_local_rate_limit
 ```
 
 Search Results:

@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pipy-ok-c1
+  name: pipy-ok-c3
   labels:
-    app: pipy-ok-c1
+    app: pipy-ok-c3
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pipy-ok-c1
+      app: pipy-ok-c3
   template:
     metadata:
       labels:
-        app: pipy-ok-c1
+        app: pipy-ok-c3
     spec:
       containers:
         - name: pipy
@@ -26,7 +26,7 @@ spec:
             - |
               pipy()
               .listen(8080)
-              .serveHTTP(new Message('Hi, I am from Cluster1 and controlled by OSM !'))
+              .serveHTTP(new Message('Hi, I am from Cluster3 and controlled by FSM !'))
 ---
 apiVersion: v1
 kind: Service
@@ -39,12 +39,12 @@ spec:
       targetPort: 8080
       protocol: TCP
   selector:
-    app: pipy-ok-c1
+    app: pipy-ok-c3
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: pipy-ok-c1
+  name: pipy-ok-c3
 spec:
   ports:
     - name: pipy
@@ -52,4 +52,4 @@ spec:
       targetPort: 8080
       protocol: TCP
   selector:
-    app: pipy-ok-c1
+    app: pipy-ok-c3

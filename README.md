@@ -1,1 +1,1 @@
-# osm-edge-v1.2-demo
+# fsm-v1.2-demo

@@ -1,32 +1,32 @@
-# OSM Edge Ingress 测试
+# FSM Ingress 测试
 
-## 1. 下载并安装 osm-edge 命令行工具
+## 1. 下载并安装 fsm 命令行工具
 
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.3.0
-curl -L https://github.com/flomesh-io/osm-edge/releases/download/${release}/osm-edge-${release}-${system}-${arch}.tar.gz | tar -vxzf -
-./${system}-${arch}/osm version
-cp ./${system}-${arch}/osm /usr/local/bin/
+release=v1.0.0
+curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+./${system}-${arch}/fsm version
+cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-## 2. 安装 osm-edge&FSM Ingress
+## 2. 安装 fsm&FSM Ingress
 
 ```bash
-export osm_namespace=osm-system 
-export osm_mesh_name=osm 
+export fsm_namespace=fsm-system 
+export fsm_mesh_name=fsm 
 
-osm install \
-    --mesh-name "$osm_mesh_name" \
-    --osm-namespace "$osm_namespace" \
-    --set=osm.certificateProvider.kind=tresor \
-    --set=osm.image.registry=flomesh \
-    --set=osm.image.tag=1.3.0 \
-    --set=osm.image.pullPolicy=Always \
-    --set=osm.enableEgress=false \
-    --set=osm.sidecarLogLevel=error \
-    --set=osm.controllerLogLevel=warn \
+fsm install \
+    --mesh-name "$fsm_mesh_name" \
+    --fsm-namespace "$fsm_namespace" \
+    --set=fsm.certificateProvider.kind=tresor \
+    --set=fsm.image.registry=flomesh \
+    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.pullPolicy=Always \
+    --set=fsm.enableEgress=false \
+    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.controllerLogLevel=warn \
     --set=fsm.enabled=true \
     --timeout=900s
 ```
@@ -38,12 +38,12 @@ osm install \
 ```bash
 #模拟业务服务
 kubectl create namespace httpbin
-osm namespace add httpbin
-kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/ingress-fsm/httpbin.yaml
+fsm namespace add httpbin
+kubectl apply -n httpbin -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/ingress-fsm/httpbin.yaml
 
 #模拟外部客户端
 kubectl create namespace ext-curl
-kubectl apply -n ext-curl -f https://raw.githubusercontent.com/cybwan/osm-edge-start-demo/main/demo/ingress-fsm/curl.yaml
+kubectl apply -n ext-curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/ingress-fsm/curl.yaml
 
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n httpbin -l app=httpbin --timeout=180s
@@ -53,7 +53,7 @@ kubectl wait --for=condition=ready pod -n ext-curl -l app=curl --timeout=180s
 ### 3.2 设置 Ingress 策略
 
 ```bash
-export osm_namespace=osm-system
+export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -87,7 +87,7 @@ spec:
       protocol: http
   sources:
   - kind: Service
-    namespace: "$osm_namespace"
+    namespace: "$fsm_namespace"
     name: fsm-ingress-pipy-controller
 EOF
 ```
@@ -95,7 +95,7 @@ EOF
 ### 3.3 测试指令
 
 ```bash
-kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://fsm-ingress-pipy-controller.osm-system:80/get -H "Host: httpbin.org"
+kubectl exec "$(kubectl get pod -n ext-curl -l app=curl -o jsonpath='{.items..metadata.name}')" -n ext-curl -- curl -sI http://fsm-ingress-pipy-controller.fsm-system:80/get -H "Host: httpbin.org"
 ```
 
 ### 3.4 测试结果
@@ -110,9 +110,9 @@ content-type: application/json
 content-length: 247
 access-control-allow-origin: *
 access-control-allow-credentials: true
-osm-stats-namespace: httpbin
-osm-stats-kind: Deployment
-osm-stats-name: httpbin
-osm-stats-pod: httpbin-7c6464475-pz5gf
+fsm-stats-namespace: httpbin
+fsm-stats-kind: Deployment
+fsm-stats-name: httpbin
+fsm-stats-pod: httpbin-7c6464475-pz5gf
 connection: keep-alive
 ```
