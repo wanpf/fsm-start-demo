@@ -1,0 +1,3 @@
+[submodule "demo/cloud/consul/Spring-Boot-Consul-Kubernetes"]
+	path = demo/cloud/consul/Spring-Boot-Consul-Kubernetes
+	url = https://github.com/felipemeriga/Spring-Boot-Consul-Kubernetes.git
