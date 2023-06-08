@@ -6,7 +6,7 @@ CTR_REGISTRY = cybwan
 .PHONY: docker-build-account-service
 docker-build-account-service:
 	docker buildx build --builder fsm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) \
-	-t $(CTR_REGISTRY)/spring-consul-demo:acount-service \
+	-t $(CTR_REGISTRY)/spring-consul-demo:account-service \
 	-f dockerfiles/Dockerfile.account-service .
 
 .PHONY: docker-build-customer-service
