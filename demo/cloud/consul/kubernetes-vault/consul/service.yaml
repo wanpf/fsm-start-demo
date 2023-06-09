@@ -5,7 +5,6 @@ metadata:
   labels:
     name: consul
 spec:
-  clusterIP: None
   ports:
     - name: http
       port: 8500

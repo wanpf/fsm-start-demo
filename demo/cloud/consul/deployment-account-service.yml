@@ -3,18 +3,18 @@
 # we have the option of using the NodePort, or ClusterIP. Remember that if you use LoadBalancer in a eks cluster
 # a load balancer will be created in AWS, pointing to the node instances of the cluster, which means it will be externally reachable.
 
-kind: Service
-apiVersion: v1
-metadata:
-  name: account-service
-spec:
-  selector:
-    app: account-service
-  type: NodePort
-  ports:
-    - nodePort: 30161
-      port: 80
-      targetPort: 9003
+#kind: Service
+#apiVersion: v1
+#metadata:
+#  name: account-service
+#spec:
+#  selector:
+#    app: account-service
+#  type: NodePort
+#  ports:
+#    - nodePort: 30161
+#      port: 80
+#      targetPort: 9003
 
 #kind: Service
 #apiVersion: v1

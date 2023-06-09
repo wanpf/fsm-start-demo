@@ -1,14 +1,14 @@
-kind: Service
-apiVersion: v1
-metadata:
-  name: gateway-service
-spec:
-  selector:
-    app: gateway-service
-  type: LoadBalancer
-  ports:
-    - port: 80
-      targetPort: 8080
+#kind: Service
+#apiVersion: v1
+#metadata:
+#  name: gateway-service
+#spec:
+#  selector:
+#    app: gateway-service
+#  type: LoadBalancer
+#  ports:
+#    - port: 80
+#      targetPort: 8080
 
 
 ---
