@@ -77,7 +77,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin
@@ -142,7 +142,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin

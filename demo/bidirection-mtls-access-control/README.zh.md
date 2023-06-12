@@ -78,7 +78,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: AccessCert
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: client-mtls-cert
   namespace: bidi-mtls-middle
@@ -106,7 +106,7 @@ kubectl apply -n bidi-mtls-client -f https://raw.githubusercontent.com/cybwan/fs
 export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: client2middle
   namespace: bidi-mtls-middle
@@ -173,7 +173,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: AccessCert
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-mtls-cert
   namespace: bidi-mtls-middle
@@ -200,7 +200,7 @@ kubectl apply -n egress-server -f https://raw.githubusercontent.com/cybwan/fsm-s
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: bidi-mtls-middle

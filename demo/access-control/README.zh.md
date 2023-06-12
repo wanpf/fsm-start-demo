@@ -76,10 +76,9 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 #### 3.3.2 设置基于服务的访问控制策略
 
 ```bash
-export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin
@@ -145,7 +144,7 @@ export fsm_namespace=fsm-system
 curl_pod_ip="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: AccessControl
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin
@@ -209,7 +208,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: AccessCert
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: curl-mtls-cert
   namespace: httpbin
@@ -237,7 +236,7 @@ kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo
 export fsm_namespace=fsm-system
 kubectl apply -f - <<EOF
 kind: AccessControl
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin
@@ -308,7 +307,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: AccessCert
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: curl-mtls-cert
   namespace: httpbin
@@ -337,7 +336,7 @@ export fsm_namespace=fsm-system
 curl_pod_ip="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: AccessControl
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin

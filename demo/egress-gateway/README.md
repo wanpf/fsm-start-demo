@@ -166,7 +166,7 @@ command terminated with exit code 52
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin-80
   namespace: curl
@@ -240,7 +240,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traff
 ```bash
 kubectl apply -f - <<EOF
 kind: EgressGateway
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: global-egress-gateway
   namespace: curl
@@ -336,7 +336,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin-80
   namespace: curl
@@ -358,7 +358,7 @@ EOF
 ```bash
 kubectl apply -f - <<EOF
 kind: EgressGateway
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: global-egress-gateway
   namespace: curl

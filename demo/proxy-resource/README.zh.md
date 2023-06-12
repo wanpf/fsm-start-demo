@@ -45,14 +45,14 @@ fsm install \
 
 Namespace 和 Pod 所支持的资源限定的 Annotation :
 
-- openservicemesh.io/sidecar-resource-limits-cpu
-- openservicemesh.io/sidecar-resource-limits-memory
-- openservicemesh.io/sidecar-resource-limits-storage
-- openservicemesh.io/sidecar-resource-limits-ephemeral-storage
-- openservicemesh.io/sidecar-resource-requests-cpu
-- openservicemesh.io/sidecar-resource-requests-memory
-- openservicemesh.io/sidecar-resource-requests-storage
-- openservicemesh.io/sidecar-resource-requests-ephemeral-storage
+- flomesh.io/sidecar-resource-limits-cpu
+- flomesh.io/sidecar-resource-limits-memory
+- flomesh.io/sidecar-resource-limits-storage
+- flomesh.io/sidecar-resource-limits-ephemeral-storage
+- flomesh.io/sidecar-resource-requests-cpu
+- flomesh.io/sidecar-resource-requests-memory
+- flomesh.io/sidecar-resource-requests-storage
+- flomesh.io/sidecar-resource-requests-ephemeral-storage
 
 ### 3.2 部署业务 POD
 
@@ -119,7 +119,7 @@ kubectl get pod -n curl ${curl_client} -o jsonpath='{.spec.containers[1].resourc
 #### 3.3.5 使用 Namespace 的 资源限定 Annotation
 
 ```bash
-kubectl patch namespace curl -p '{"metadata":{"annotations":{"openservicemesh.io/sidecar-resource-limits-memory":"1024M","openservicemesh.io/sidecar-resource-requests-memory":"512M"}}}' --type=merge
+kubectl patch namespace curl -p '{"metadata":{"annotations":{"flomesh.io/sidecar-resource-limits-memory":"1024M","flomesh.io/sidecar-resource-requests-memory":"512M"}}}' --type=merge
 ```
 
 #### 3.3.6 重启 Pod
@@ -153,7 +153,7 @@ kubectl get pod -n curl ${curl_client} -o jsonpath='{.spec.containers[1].resourc
 #### 3.3.8 使用 Pod 的 资源限定 Annotation
 
 ```bash
-kubectl patch deployment -n curl curl -p '{"spec": {"template": {"metadata": {"annotations": {"openservicemesh.io/sidecar-resource-limits-memory": "512M","openservicemesh.io/sidecar-resource-requests-memory": "512M"}}}}}' --type=merge
+kubectl patch deployment -n curl curl -p '{"spec": {"template": {"metadata": {"annotations": {"flomesh.io/sidecar-resource-limits-memory": "512M","flomesh.io/sidecar-resource-requests-memory": "512M"}}}}}' --type=merge
 ```
 
 #### 3.3.9 查看当前边车容器的资源限定

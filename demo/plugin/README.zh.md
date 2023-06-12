@@ -163,7 +163,7 @@ spec:
           values: ["curl"]
     namespaceSelector:
       matchExpressions:
-        - key: openservicemesh.io/monitored-by
+        - key: flomesh.io/monitored-by
           operator: In
           values: ["fsm"]
 EOF
@@ -188,7 +188,7 @@ spec:
           values: ["v1"]
     namespaceSelector:
       matchExpressions:
-        - key: openservicemesh.io/monitored-by
+        - key: flomesh.io/monitored-by
           operator: In
           values: ["fsm"]
 EOF

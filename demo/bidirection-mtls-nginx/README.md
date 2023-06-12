@@ -145,7 +145,7 @@ EOF
 ```bash
 kubectl apply -f - <<EOF
 kind: IngressBackend
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: egress-middle
   namespace: egress-middle
@@ -222,7 +222,7 @@ kubectl create secret generic -n fsm-system egress-middle-cert \
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-middle
@@ -359,7 +359,7 @@ EOF
 ```bash
 kubectl apply -f - <<EOF
 kind: IngressBackend
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: egress-middle
   namespace: egress-middle
@@ -440,7 +440,7 @@ kubectl create secret generic -n fsm-system egress-middle-cert \
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-middle
@@ -595,7 +595,7 @@ EOF
 ```bash
 kubectl apply -f - <<EOF
 kind: IngressBackend
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: egress-middle
   namespace: egress-middle
@@ -676,7 +676,7 @@ kubectl create secret generic -n fsm-system egress-middle-cert \
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-middle
@@ -845,7 +845,7 @@ EOF
 ```bash
 kubectl apply -f - <<EOF
 kind: IngressBackend
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: egress-middle
   namespace: egress-middle
@@ -926,7 +926,7 @@ kubectl create secret generic -n fsm-system egress-middle-cert \
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-middle

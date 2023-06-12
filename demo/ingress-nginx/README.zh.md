@@ -125,7 +125,7 @@ EOF
 ```bash
 kubectl apply -f - <<EOF
 kind: IngressBackend
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin
@@ -237,7 +237,7 @@ EOF
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: IngressBackend
 metadata:
   name: httpbin
@@ -286,7 +286,7 @@ x-pipy-upstream-service-time: 2
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: IngressBackend
 metadata:
   name: httpbin
@@ -332,7 +332,7 @@ Connection: keep-alive
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: IngressBackend
 metadata:
   name: httpbin

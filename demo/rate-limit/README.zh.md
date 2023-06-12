@@ -136,7 +136,7 @@ All done 10 calls (plus 0 warmup) 4.964 ms avg, 574.8 qps
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: tcp-rate-limit
@@ -235,7 +235,7 @@ local_rate_limit.inbound_ratelimit/fortio_8078_tcp.rate_limited: 7
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: tcp-rate-limit
@@ -386,7 +386,7 @@ Code 200 : 10 (100.0 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -493,7 +493,7 @@ http_local_rate_limiter.http_local_rate_limit.rate_limited: 7
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -588,7 +588,7 @@ local_rate_limit.inbound_ratelimit/fortio_8078_tcp.rate_limited: 10
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -747,7 +747,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"traff
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -855,7 +855,7 @@ http_local_rate_limiter.http_local_rate_limit.rate_limited: 7
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -951,7 +951,7 @@ local_rate_limit.inbound_ratelimit/fortio_8078_tcp.rate_limited: 10
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -1182,7 +1182,7 @@ kubectl exec "$curl_client" -n ratelimit -c curl -- curl -si http://fortio.ratel
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -1290,7 +1290,7 @@ http_local_rate_limiter.http_local_rate_limit.rate_limited: 7
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit
@@ -1386,7 +1386,7 @@ local_rate_limit.inbound_ratelimit/fortio_8078_tcp.rate_limited: 10
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-rate-limit

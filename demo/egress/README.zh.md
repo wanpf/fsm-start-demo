@@ -106,7 +106,7 @@ command terminated with exit code 52
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin-14001
   namespace: egress-client
@@ -190,7 +190,7 @@ command terminated with exit code 52
 httpbin_pod_ip="$(kubectl get pod -n egress-server -l app=httpbin -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin-14001
   namespace: egress-client
@@ -272,7 +272,7 @@ command terminated with exit code 35
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-client
@@ -364,7 +364,7 @@ kubectl create secret generic -n fsm-system egress-client-cert \
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-client
@@ -457,7 +457,7 @@ command terminated with exit code 35
 server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-client
@@ -552,7 +552,7 @@ kubectl create secret generic -n fsm-system egress-client-cert \
 server_pod_ip="$(kubectl get pod -n egress-server -l app=server -o jsonpath='{.items[0].status.podIP}')"
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: server-8443
   namespace: egress-client

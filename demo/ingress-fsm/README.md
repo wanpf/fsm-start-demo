@@ -75,7 +75,7 @@ spec:
               number: 14001      
 ---
 kind: IngressBackend
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin
   namespace: httpbin

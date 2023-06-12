@@ -214,7 +214,7 @@ spec:
           values: ["pipy-ok"]
     namespaceSelector:
       matchExpressions:
-        - key: openservicemesh.io/monitored-by
+        - key: flomesh.io/monitored-by
           operator: In
           values: ["fsm"]
 EOF

@@ -79,7 +79,7 @@ kubectl wait --for=condition=ready pod -n circuit-breaking -l app=fortio-client 
 
 #### 3.3.1 场景测试一：最大连接数&最大请求频率熔断
 
-请参见[Circuit breaking for destinations within the mesh](https://docs.openservicemesh.io/docs/demos/circuit_breaking_mesh_internal/)
+请参见[Circuit breaking for destinations within the mesh](https://docs.flomesh.io/docs/demos/circuit_breaking_mesh_internal/)
 
 #### 3.3.2 场景测试二：错误数量触发熔断&降级持续时间
 
@@ -123,7 +123,7 @@ Code 511 : 207 (20.7 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking
@@ -251,7 +251,7 @@ Code 511 : 194 (19.4 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking
@@ -380,7 +380,7 @@ Code 511 : 218 (21.8 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking
@@ -508,7 +508,7 @@ Code 511 : 194 (19.4 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking
@@ -665,7 +665,7 @@ Code 200 : 1000 (100.0 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking
@@ -842,7 +842,7 @@ Code 200 : 1000 (100.0 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking
@@ -1019,7 +1019,7 @@ Code 200 : 1000 (100.0 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking
@@ -1196,7 +1196,7 @@ Code 200 : 1000 (100.0 %)
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 kind: UpstreamTrafficSetting
 metadata:
   name: http-circuit-breaking

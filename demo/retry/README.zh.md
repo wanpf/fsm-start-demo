@@ -83,7 +83,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: Retry
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: retry
   namespace: retry
@@ -210,7 +210,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: Egress
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: httpbin-14001
   namespace: retry
@@ -239,7 +239,7 @@ kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featu
 ```bash
 kubectl apply -f - <<EOF
 kind: Retry
-apiVersion: policy.openservicemesh.io/v1alpha1
+apiVersion: policy.flomesh.io/v1alpha1
 metadata:
   name: retry
   namespace: retry
