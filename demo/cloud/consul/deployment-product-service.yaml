@@ -10,6 +10,11 @@
 #    - port: 80
 #      targetPort: 9001
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: product-service
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,6 +31,7 @@ spec:
       labels:
         app: product-service
     spec:
+      serviceAccountName: product-service
       containers:
         - name: product-service
           image: cybwan/spring-consul-demo:product-service

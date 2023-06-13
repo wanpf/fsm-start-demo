@@ -15,13 +15,20 @@ cp ./${system}-${arch}/fsm /usr/local/bin/
 
 ```bash
 #部署Consul服务
+export DEMO_HOME=https://raw.githubusercontent.com/cybwan/fsm-start-demo/main
+
+curl $DEMO_HOME/demo/cloud/consul/kubernetes-vault/certs/ca.pem -o /tmp/ca.pem
+curl $DEMO_HOME/demo/cloud/consul/kubernetes-vault/certs/consul.pem -o /tmp/consul.pem
+curl $DEMO_HOME/demo/cloud/consul/kubernetes-vault/certs/consul-key.pem -o /tmp/consul-key.pem
+curl $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/config.json -o /tmp/config.json
+
 kubectl create secret generic consul \
   --from-literal="gossip-encryption-key=Jjq06uXduWeU8Bk9a/aV8z9QMa2+ADEXhP9yesp/bGg=" \
-  --from-file=$DEMO_HOME/demo/cloud/consul/kubernetes-vault/certs/ca.pem \
-  --from-file=$DEMO_HOME/demo/cloud/consul/kubernetes-vault/certs/consul.pem \
-  --from-file=$DEMO_HOME/demo/cloud/consul/kubernetes-vault/certs/consul-key.pem
+  --from-file=/tmp/ca.pem \
+  --from-file=/tmp/consul.pem \
+  --from-file=/tmp/consul-key.pem
 
-kubectl create configmap consul --from-file=$DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/config.json
+kubectl create configmap consul --from-file=/tmp/config.json
 
 kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/service.yaml
 kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/statefulset.yaml
@@ -39,17 +46,22 @@ fsm install \
     --mesh-name "$fsm_mesh_name" \
     --fsm-namespace "$fsm_namespace" \
     --set=fsm.certificateProvider.kind=tresor \
-    --set=fsm.image.registry=localhost:5000/flomesh \
-    --set=fsm.image.tag=latest \
+    --set=fsm.image.registry=cybwan \
+    --set=fsm.image.tag=1.0.1 \
     --set=fsm.image.pullPolicy=Always \
     --set=fsm.sidecarLogLevel=error \
     --set=fsm.controllerLogLevel=debug \
     --set=fsm.featureFlags.enableHostIPDefaultRoute=true \
     --set=fsm.deployConsulConnector=true \
-    --set=fsm.cloudConnector.deriveNamespace=consul-demo \
+    --set=fsm.cloudConnector.deriveNamespace=consul-derive \
+    --set=fsm.cloudConnector.appProtocol=http \
     --set=fsm.cloudConnector.consul.httpAddr=$consul_svc_addr:8500 \
     --set=fsm.cloudConnector.consul.passingOnly=false \
     --timeout=900s
+
+#用于承载转义的consul k8s services 和 endpoints
+kubectl create namespace consul-derive
+fsm namespace add consul-derive
 ```
 
 ## 4. Consul集成测试
@@ -144,7 +156,7 @@ kubectl exec $curl -n curl -- curl -s http://$gateway/product/test
 kubectl exec $curl -n curl -- curl -s http://$gateway/customer/withAccounts/1 | jq
 ```
 
-#### 4.7 测试结果
+### 4.7 测试结果
 
 正确返回结果类似于:
 
