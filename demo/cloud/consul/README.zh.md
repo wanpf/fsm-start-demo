@@ -169,7 +169,7 @@ kubectl exec $curl -n curl -- curl -s http://$product:9001/test
 
 正确返回结果类似于:
 
-```bash
+```json
 Product Service is working properly!
 ```
 
@@ -183,7 +183,7 @@ kubectl exec $curl -n curl -- curl -s http://$order:9000/test
 
 正确返回结果类似于:
 
-```bash
+```json
 Order Service is working properly!
 ```
 
@@ -197,7 +197,7 @@ kubectl exec $curl -n curl -- curl -s http://$customer:9002/test
 
 正确返回结果类似于:
 
-```bash
+```json
 Costumer Service is working properly!
 ```
 
