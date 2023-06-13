@@ -39,8 +39,6 @@ kubectl wait --for=condition=ready pod -l app=consul --timeout=180s
 ## 3. 安装 fsm
 
 ```bash
-kubectl create namespace consul-derive
-
 export fsm_namespace=fsm-system 
 export fsm_mesh_name=fsm 
 export consul_svc_addr="$(kubectl get svc -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
@@ -51,7 +49,7 @@ fsm install \
     --set=fsm.image.registry=cybwan \
     --set=fsm.image.tag=1.0.1 \
     --set=fsm.image.pullPolicy=Always \
-    --set=fsm.sidecarLogLevel=debug \
+    --set=fsm.sidecarLogLevel=error \
     --set=fsm.controllerLogLevel=warn \
     --set=fsm.featureFlags.enableHostIPDefaultRoute=true \
     --set=fsm.deployConsulConnector=true \
@@ -62,6 +60,7 @@ fsm install \
     --timeout=900s
 
 #用于承载转义的consul k8s services 和 endpoints
+kubectl create namespace consul-derive
 fsm namespace add consul-derive
 ```
 
@@ -104,7 +103,7 @@ export fsm_namespace=fsm-system
 kubectl patch meshconfig fsm-mesh-config -n "$fsm_namespace" -p '{"spec":{"featureFlags":{"enableAccessControlPolicy":true}}}'  --type=merge
 ```
 
-### 4.5 设置基于服务的访问控制策略
+### 4.5 设置访问控制策略
 
 **目的: 以便模拟客户端和consul 服务中心可以访问 consul 微服务**
 
@@ -128,15 +127,16 @@ EOF
 
 ### 4.6 部署业务 POD
 
-Product    9001
+- Product    9001
 
-Order       9000
+- Order       9000
 
-Gateway  8080
+- Gateway  8080
 
-Customer 9002
+- Customer 9002
 
-Account    9003
+- Account    9003
+
 
 ```bash
 #模拟业务服务
@@ -149,12 +149,6 @@ kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-account-
 kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-customer-service.yml
 kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-gateway-service.yaml
 
-#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-product-service.yaml
-#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-order-service.yaml
-#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-account-service.yml
-#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-customer-service.yml
-#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-gateway-service.yaml
-
 #等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=product-service --timeout=180s
 kubectl wait --for=condition=ready pod -n consul-demo -l app=order-service --timeout=180s
@@ -165,42 +159,115 @@ kubectl wait --for=condition=ready pod -n consul-demo -l app=gateway-service --t
 
 ### 4.7 测试指令
 
+#### 4.7.1 测试指令 一
+
 ```bash
 curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
 product=$(kubectl get pod -n consul-demo -l app=product-service -o jsonpath='{.items[0].status.podIP}')
 kubectl exec $curl -n curl -- curl -s http://$product:9001/test
+```
 
+正确返回结果类似于:
+
+```bash
+Product Service is working properly!
+```
+
+#### 4.7.2 测试指令 二
+
+```bash
 curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
 order=$(kubectl get pod -n consul-demo -l app=order-service -o jsonpath='{.items[0].status.podIP}')
 kubectl exec $curl -n curl -- curl -s http://$order:9000/test
+```
 
+正确返回结果类似于:
+
+```bash
+Order Service is working properly!
+```
+
+#### 4.7.3 测试指令 三
+
+```bash
 curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
 customer=$(kubectl get pod -n consul-demo -l app=customer-service -o jsonpath='{.items[0].status.podIP}')
 kubectl exec $curl -n curl -- curl -s http://$customer:9002/test
+```
 
+正确返回结果类似于:
+
+```bash
+Costumer Service is working properly!
+```
+
+#### 4.7.4 测试指令 四
+
+```bash
 curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
 account=$(kubectl get pod -n consul-demo -l app=account-service -o jsonpath='{.items[0].status.podIP}')
 kubectl exec $curl -n curl -- curl -s http://$account:9003/1
+```
 
+正确返回结果类似于:
+
+```json
+{"id":1,"number":"1234567890","balance":50000,"customerId":1}
+```
+
+#### 4.7.5 测试指令 五
+
+```bash
 curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
 gateway=$(kubectl get pod -n consul-demo -l app=gateway-service -o jsonpath='{.items[0].status.podIP}')
 kubectl exec $curl -n curl -- curl -s http://$gateway/customer/test
-kubectl exec $curl -n curl -- curl -s http://$gateway/order/test
-kubectl exec $curl -n curl -- curl -s http://$gateway/product/test
-kubectl exec $curl -n curl -- curl -s http://$gateway/customer/withAccounts/1 | jq
 ```
-
-### 4.8 测试结果
 
 正确返回结果类似于:
 
 ```json
 Costumer Service is working properly!
+```
 
+#### 4.7.6 测试指令 六
+
+```bash
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+gateway=$(kubectl get pod -n consul-demo -l app=gateway-service -o jsonpath='{.items[0].status.podIP}')
+kubectl exec $curl -n curl -- curl -s http://$gateway/order/test
+```
+
+正确返回结果类似于:
+
+```json
 Order Service is working properly!
+```
 
+#### 4.7.7 测试指令 七
+
+```bash
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+gateway=$(kubectl get pod -n consul-demo -l app=gateway-service -o jsonpath='{.items[0].status.podIP}')
+kubectl exec $curl -n curl -- curl -s http://$gateway/product/test
+```
+
+正确返回结果类似于:
+
+```json
 Product Service is working properly!
+```
 
+#### 4.7.8 测试指令 八
+
+```bash
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+gateway=$(kubectl get pod -n consul-demo -l app=gateway-service -o jsonpath='{.items[0].status.podIP}')
+kubectl exec $curl -n curl -- curl -s http://$gateway/customer/withAccounts/1 | jq
+```
+
+正确返回结果类似于:
+
+```json
 {
   "id": 1,
   "name": "John Scott",
@@ -224,3 +291,5 @@ Product Service is working properly!
   ]
 }
 ```
+
+#### 
