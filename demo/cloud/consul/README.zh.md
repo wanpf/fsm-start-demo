@@ -39,6 +39,8 @@ kubectl wait --for=condition=ready pod -l app=consul --timeout=180s
 ## 3. 安装 fsm
 
 ```bash
+kubectl create namespace consul-derive
+
 export fsm_namespace=fsm-system 
 export fsm_mesh_name=fsm 
 export consul_svc_addr="$(kubectl get svc -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
@@ -49,8 +51,8 @@ fsm install \
     --set=fsm.image.registry=cybwan \
     --set=fsm.image.tag=1.0.1 \
     --set=fsm.image.pullPolicy=Always \
-    --set=fsm.sidecarLogLevel=error \
-    --set=fsm.controllerLogLevel=debug \
+    --set=fsm.sidecarLogLevel=debug \
+    --set=fsm.controllerLogLevel=warn \
     --set=fsm.featureFlags.enableHostIPDefaultRoute=true \
     --set=fsm.deployConsulConnector=true \
     --set=fsm.cloudConnector.deriveNamespace=consul-derive \
@@ -60,41 +62,20 @@ fsm install \
     --timeout=900s
 
 #用于承载转义的consul k8s services 和 endpoints
-kubectl create namespace consul-derive
 fsm namespace add consul-derive
 ```
 
 ## 4. Consul集成测试
 
 
-### 4.1 部署业务 POD
+### 4.1 部署模拟客户端
 
 ```bash
-#模拟业务服务
-kubectl create namespace consul-demo
-fsm namespace add consul-demo
-kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-product-service.yaml
-kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-order-service.yaml
-kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-account-service.yml
-kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-customer-service.yml
-kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-gateway-service.yaml
-
-kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-product-service.yaml
-kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-order-service.yaml
-kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-account-service.yml
-kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-customer-service.yml
-kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-gateway-service.yaml
-
 #模拟外部客户端
 kubectl create namespace curl
 kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/curl.yaml
 
-#等待依赖的 POD 正常启动
-kubectl wait --for=condition=ready pod -n consul-demo -l app=product-service --timeout=180s
-kubectl wait --for=condition=ready pod -n consul-demo -l app=order-service --timeout=180s
-kubectl wait --for=condition=ready pod -n consul-demo -l app=account-service --timeout=180s
-kubectl wait --for=condition=ready pod -n consul-demo -l app=customer-service --timeout=180s
-kubectl wait --for=condition=ready pod -n consul-demo -l app=gateway-service --timeout=180s
+#等待 POD 正常启动
 kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
 ```
 
@@ -145,18 +126,71 @@ spec:
 EOF
 ```
 
-### 4.6 测试指令
+### 4.6 部署业务 POD
+
+Product    9001
+
+Order       9000
+
+Gateway  8080
+
+Customer 9002
+
+Account    9003
+
+```bash
+#模拟业务服务
+export DEMO_HOME=https://raw.githubusercontent.com/cybwan/fsm-start-demo/main
+kubectl create namespace consul-demo
+fsm namespace add consul-demo
+kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-product-service.yaml
+kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-order-service.yaml
+kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-account-service.yml
+kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-customer-service.yml
+kubectl apply -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-gateway-service.yaml
+
+#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-product-service.yaml
+#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-order-service.yaml
+#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-account-service.yml
+#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-customer-service.yml
+#kubectl delete -n consul-demo -f $DEMO_HOME/demo/cloud/consul/deployment-gateway-service.yaml
+
+#等待依赖的 POD 正常启动
+kubectl wait --for=condition=ready pod -n consul-demo -l app=product-service --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=order-service --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=account-service --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=customer-service --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=gateway-service --timeout=180s
+```
+
+### 4.7 测试指令
 
 ```bash
 curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
-gateway="$(kubectl get svc -n consul-demo gateway-service -o jsonpath='{.spec.clusterIP}')"
+product=$(kubectl get pod -n consul-demo -l app=product-service -o jsonpath='{.items[0].status.podIP}')
+kubectl exec $curl -n curl -- curl -s http://$product:9001/test
+
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+order=$(kubectl get pod -n consul-demo -l app=order-service -o jsonpath='{.items[0].status.podIP}')
+kubectl exec $curl -n curl -- curl -s http://$order:9000/test
+
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+customer=$(kubectl get pod -n consul-demo -l app=customer-service -o jsonpath='{.items[0].status.podIP}')
+kubectl exec $curl -n curl -- curl -s http://$customer:9002/test
+
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+account=$(kubectl get pod -n consul-demo -l app=account-service -o jsonpath='{.items[0].status.podIP}')
+kubectl exec $curl -n curl -- curl -s http://$account:9003/1
+
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+gateway=$(kubectl get pod -n consul-demo -l app=gateway-service -o jsonpath='{.items[0].status.podIP}')
 kubectl exec $curl -n curl -- curl -s http://$gateway/customer/test
 kubectl exec $curl -n curl -- curl -s http://$gateway/order/test
 kubectl exec $curl -n curl -- curl -s http://$gateway/product/test
 kubectl exec $curl -n curl -- curl -s http://$gateway/customer/withAccounts/1 | jq
 ```
 
-### 4.7 测试结果
+### 4.8 测试结果
 
 正确返回结果类似于:
 
@@ -190,4 +224,3 @@ Product Service is working properly!
   ]
 }
 ```
-
