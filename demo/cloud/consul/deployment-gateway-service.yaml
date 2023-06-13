@@ -1,16 +1,14 @@
-#kind: Service
-#apiVersion: v1
-#metadata:
-#  name: gateway-service
-#spec:
-#  selector:
-#    app: gateway-service
-#  type: LoadBalancer
-#  ports:
-#    - port: 80
-#      targetPort: 8080
-
-
+kind: Service
+apiVersion: v1
+metadata:
+  name: gateway-service
+spec:
+  selector:
+    app: gateway-service
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -31,5 +29,6 @@ spec:
       containers:
         - name: gateway-service
           image: cybwan/spring-consul-demo:gateway-service
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080

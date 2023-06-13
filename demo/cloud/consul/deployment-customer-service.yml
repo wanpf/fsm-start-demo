@@ -34,5 +34,6 @@ spec:
       containers:
         - name: customer-service
           image: cybwan/spring-consul-demo:customer-service
+          imagePullPolicy: Always
           ports:
             - containerPort: 9002

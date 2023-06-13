@@ -29,5 +29,6 @@ spec:
       containers:
         - name: order-service
           image: cybwan/spring-consul-demo:order-service
+          imagePullPolicy: Always
           ports:
             - containerPort: 9000

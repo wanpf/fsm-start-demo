@@ -29,5 +29,6 @@ spec:
       containers:
         - name: product-service
           image: cybwan/spring-consul-demo:product-service
+          imagePullPolicy: Always
           ports:
             - containerPort: 9001
