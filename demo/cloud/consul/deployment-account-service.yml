@@ -53,6 +53,5 @@ spec:
       containers:
         - name: account-service
           image: cybwan/spring-consul-demo:account-service
-          imagePullPolicy: Always
           ports:
             - containerPort: 9003
