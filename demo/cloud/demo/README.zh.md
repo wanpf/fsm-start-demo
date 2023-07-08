@@ -136,6 +136,8 @@ fsm namespace add consul-demo
 
 # 一个独立的服务，主要应该是走tiny协议调用接口用，但demo程序启动依赖该服务
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/tiny/tiny-deploy.yaml
+# 等待依赖的 POD 正常启动
+kubectl wait --for=condition=ready pod -n consul-demo -l app=sc-tiny --timeout=180s
 
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-props.yaml
 #kubectl get configmap -n consul-demo server-application-properties -o yaml
