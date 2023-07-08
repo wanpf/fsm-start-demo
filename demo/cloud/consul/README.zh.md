@@ -54,7 +54,6 @@ fsm install \
     --set=fsm.featureFlags.enableHostIPDefaultRoute=true \
     --set=fsm.deployConsulConnector=true \
     --set=fsm.cloudConnector.deriveNamespace=consul-derive \
-    --set=fsm.cloudConnector.appProtocol=http \
     --set=fsm.cloudConnector.consul.httpAddr=$consul_svc_addr:8500 \
     --set=fsm.cloudConnector.consul.passingOnly=false \
     --timeout=900s
@@ -291,5 +290,3 @@ kubectl exec $curl -n curl -- curl -s http://$gateway/customer/withAccounts/1 | 
   ]
 }
 ```
-
-#### 

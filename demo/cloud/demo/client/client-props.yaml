@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-application-properties
+data:
+  application.properties: |
+    tiny.app-name=TinyDemoClient
+    tiny.local-address=10
+    tiny.local-port=9193
+    ###
+    tiny.sc-address=sc-tiny.consul-demo.svc.cluster.local:9191
+    #Tiny Parameters
+    tiny.params.package-max-size=15728640
+    tiny.params.sc-reconnect-interval=1000
+    tiny.params.stop-start-fail=true
+    tiny.params.request-time-out=60000
+    
+    server.port=8083
+    #serverAddress=192.168.10.104:8082    
+
+    spring.application.name=tiny-demo-client-server
+    ###
+    spring.cloud.consul.host=consul.default.svc.cluster.local
+    spring.cloud.consul.port=8500
+    spring.cloud.consul.discovery.prefer-ip-address=true
+    spring.cloud.consul.discovery.instanceId=${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+    spring.cloud.consul.discovery.health-check-path=/health
+    grpc.client.grpc-server.negotiationType= PLAINTEXT
+    
+    management.server.servlet.context-path=/
+    management.endpoints.enabled-by-default=true
+    management.endpoints.web.exposure.include=*
+    management.endpoints.web.base-path=/
+    management.endpoints.jmx.exposure.include=*
+    management.endpoints.shutdown.enabled=false
+    management.metrics.export.prometheus.enabled=true
+    management.metrics.distribution.percentiles-histogram[http.server.requests]=true

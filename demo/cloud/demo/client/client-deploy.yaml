@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hangyin-client-demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: client-demo
+  name: client-demo
+spec:
+  type: NodePort
+  ports:
+  - name: app
+    port: 8083
+    targetPort: 8083
+    nodePort: 30083
+  selector:
+    app: client-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-demo
+  template:
+    metadata:
+      labels:
+        app: client-demo
+    spec:
+      serviceAccountName: hangyin-client-demo
+      containers:
+      - name: client-demo
+        image: spurringworld/sc-client-demo:0.0.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: serverAddress
+          value: "server-demo.consul-demo.svc.cluster.local:8082"
+        volumeMounts:
+        - mountPath: /home/java/config
+          name: javacfg
+      volumes:
+        - name: javacfg
+          configMap:
+            name: client-application-properties
+            items:
+              - key: "application.properties"
+                path: "application.properties"
+
