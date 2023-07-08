@@ -134,6 +134,9 @@ export BIZ_HOME=https://raw.githubusercontent.com/cybwan/fsm-start-demo/main
 kubectl create namespace consul-demo
 fsm namespace add consul-demo
 
+# 一个独立的服务，主要应该是走tiny协议调用接口用，但demo程序启动依赖该服务
+kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/tiny/tiny-deploy.yaml
+
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-props.yaml
 #kubectl get configmap -n consul-demo server-application-properties -o yaml
 # http-port: 8082
