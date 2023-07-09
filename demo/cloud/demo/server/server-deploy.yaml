@@ -1,26 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: hangyin-server-demo
----
-apiVersion: v1
-kind: Service
-metadata:
   name: server-demo
-spec:
-  ports:
-  - name: app
-    port: 8082
-    targetPort: 8082
-  - name: tiny-local
-    port: 9192
-    targetPort: 9192
-  - name: svc-local
-    port: 9292
-    targetPort: 9292
-  type: ClusterIP
-  selector:
-    app: server-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,7 +22,7 @@ spec:
         app: server-demo
         version: v1
     spec:
-      serviceAccountName: hangyin-server-demo
+      serviceAccountName: server-demo
       containers:
       - name: server-demo
         image: spurringworld/sc-server-demo:0.0.1

@@ -131,7 +131,7 @@ EOF
 
 
 ```bash
-export BIZ_HOME=https://raw.githubusercontent.com/cybwan/fsm-start-demo/main
+export DEMO_HOME=https://raw.githubusercontent.com/cybwan/fsm-start-demo/main
 
 kubectl create namespace consul-demo
 fsm namespace add consul-demo
@@ -141,6 +141,9 @@ kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/tiny/tiny-deploy.yaml
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=sc-tiny --timeout=180s
 
+tiny=$(kubectl get pod -n consul-demo -l app=sc-tiny -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $tiny
+
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-props.yaml
 #kubectl get configmap -n consul-demo server-application-properties -o yaml
 # http-port: 8082
@@ -148,6 +151,9 @@ kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-props.ya
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-deploy.yaml
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo --timeout=180s
+
+serverDemo=$(kubectl get pod -n consul-demo -l app=server-demo -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $serverDemo
 
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/client/client-props.yaml
 #kubectl get configmap -n consul-demo client-application-properties -o yaml
@@ -157,6 +163,9 @@ kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/client/client-props.ya
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/client/client-deploy.yaml
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=client-demo --timeout=180s
+
+clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $clientDemo
 ```
 
 ### 4.7 测试指令
