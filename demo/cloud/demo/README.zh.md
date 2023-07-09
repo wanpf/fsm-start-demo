@@ -186,6 +186,13 @@ kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/testHttpApi
 MTExLC1TdWNjZXNz
 ```
 
+查看服务日志:
+
+```bash
+clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $clientDemo
+```
+
 #### 4.7.2 测试指令 二
 
 ```bash
@@ -200,6 +207,13 @@ kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/tetGrpc?par
 
 ```json
 respTime for param:[222] is [2023-07-08 06:28:31]
+```
+
+查看服务日志:
+
+```bash
+clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $clientDemo
 ```
 
 ### 4.8 分流测试
