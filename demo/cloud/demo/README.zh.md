@@ -131,7 +131,7 @@ EOF
 
 
 ```bash
-export DEMO_HOME=https://raw.githubusercontent.com/cybwan/fsm-start-demo/main
+export BIZ_HOME=https://raw.githubusercontent.com/cybwan/fsm-start-demo/main
 
 kubectl create namespace consul-demo
 fsm namespace add consul-demo
