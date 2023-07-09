@@ -5,7 +5,7 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.0.3
+release=v1.0.2
 curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/fsm version
 cp ./${system}-${arch}/fsm /usr/local/bin/
@@ -34,6 +34,8 @@ kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/service.ya
 kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/statefulset.yaml
 
 kubectl wait --for=condition=ready pod -l app=consul --timeout=180s
+
+kubectl port-forward consul-0 8500:8500
 ```
 
 ## 3. 安装 fsm
@@ -47,11 +49,11 @@ fsm install \
     --fsm-namespace "$fsm_namespace" \
     --set=fsm.certificateProvider.kind=tresor \
     --set=fsm.image.registry=cybwan \
-    --set=fsm.image.tag=1.0.3 \
+    --set=fsm.image.tag=1.0.2 \
     --set=fsm.image.pullPolicy=Always \
     --set=fsm.sidecarLogLevel=error \
     --set=fsm.controllerLogLevel=warn \
-    --set=fsm.featureFlags.enableHostIPDefaultRoute=true \
+    --set=fsm.serviceAccessMode=mixed \
     --set=fsm.deployConsulConnector=true \
     --set=fsm.cloudConnector.deriveNamespace=consul-derive \
     --set=fsm.cloudConnector.consul.httpAddr=$consul_svc_addr:8500 \
@@ -147,7 +149,6 @@ kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-deploy.y
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo --timeout=180s
 
-
 kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/client/client-props.yaml
 #kubectl get configmap -n consul-demo client-application-properties -o yaml
 # 访问端口： 8083
@@ -190,5 +191,38 @@ kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/tetGrpc?par
 
 ```json
 respTime for param:[222] is [2023-07-08 06:28:31]
+```
+
+### 4.8 分流测试
+
+设置分流策略:
+
+```
+kubectl apply -n consul-derive -f - <<EOF
+apiVersion: specs.smi-spec.io/v1alpha4
+kind: HTTPRouteGroup
+metadata:
+  name: grpc-server-v1
+spec:
+  matches:
+  - name: tag
+    headers:
+    - "version": "v1"
+EOF
+
+kubectl apply -n consul-derive -f - <<EOF
+apiVersion: split.smi-spec.io/v1alpha4
+kind: TrafficSplit
+metadata:
+  name: grpc-server-split
+spec:
+  service: grpc-server
+  matches:
+  - kind: HTTPRouteGroup
+    name: grpc-server-v1
+  backends:
+  - service: grpc-server-v1
+    weight: 50
+EOF
 ```
 
