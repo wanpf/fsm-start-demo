@@ -61,7 +61,7 @@ fsm install \
     --set=fsm.cloudConnector.consul.passingOnly=false \
     --set=fsm.cloudConnector.consul.suffixTag=version \
     --set=fsm.localDNSProxy.enable=true \
-    --set=fsm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
+    --set=fsm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}" \
     --timeout=900s
 
 #用于承载转义的consul k8s services 和 endpoints
