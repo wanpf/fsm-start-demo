@@ -43,6 +43,7 @@ kubectl port-forward consul-0 8500:8500
 ```bash
 export fsm_namespace=fsm-system
 export fsm_mesh_name=fsm
+export dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
 export consul_svc_addr="$(kubectl get svc -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
 fsm install \
     --mesh-name "$fsm_mesh_name" \
@@ -59,6 +60,8 @@ fsm install \
     --set=fsm.cloudConnector.consul.httpAddr=$consul_svc_addr:8500 \
     --set=fsm.cloudConnector.consul.passingOnly=false \
     --set=fsm.cloudConnector.consul.suffixTag=version \
+    --set=fsm.localDNSProxy.enable=true \
+    --set=fsm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}"
     --timeout=900s
 
 #用于承载转义的consul k8s services 和 endpoints
