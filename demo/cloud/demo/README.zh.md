@@ -140,30 +140,38 @@ kubectl create namespace consul-demo
 fsm namespace add consul-demo
 
 # 一个独立的服务，主要应该是走tiny协议调用接口用，但demo程序启动依赖该服务
-kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/tiny/tiny-deploy.yaml
+curl $BIZ_HOME/demo/cloud/demo/tiny/tiny-deploy.yaml -o /tmp/tiny-deploy.yaml
+kubectl apply -n consul-demo -f /tmp/tiny-deploy.yaml
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=sc-tiny --timeout=180s
 
 tiny=$(kubectl get pod -n consul-demo -l app=sc-tiny -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $tiny
 
-kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-props.yaml
+export consul_svc_cluster_ip="$(kubectl get svc -n default -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
+export tiny_svc_cluster_ip="$(kubectl get svc -n consul-demo -l app=tiny -o jsonpath='{.items[0].spec.clusterIP}')"
+
+curl $BIZ_HOME/demo/cloud/demo/server/server-props.yaml -o /tmp/server-props.yaml
+cat /tmp/server-props.yaml | envsubst | kubectl apply -n consul-demo -f -
 #kubectl get configmap -n consul-demo server-application-properties -o yaml
 # http-port: 8082
 # gRPC-port: 9292
-kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/server/server-deploy.yaml
+curl $BIZ_HOME/demo/cloud/demo/server/server-deploy.yaml -o /tmp/server-deploy.yaml
+kubectl apply -n consul-demo -f /tmp/server-deploy.yaml
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo --timeout=180s
 
 serverDemo=$(kubectl get pod -n consul-demo -l app=server-demo -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $serverDemo
 
-kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/client/client-props.yaml
+curl $BIZ_HOME/demo/cloud/demo/client/client-props.yaml -o /tmp/client-props.yaml
+cat /tmp/client-props.yaml | envsubst | kubectl apply -n consul-demo -f -
 #kubectl get configmap -n consul-demo client-application-properties -o yaml
 # 访问端口： 8083
 # http-test-api: http://{{HOST}}/api/sc/testHttpApi?msg=111
 # grpc-test-api: http://{{HOST}}/api/sc/tetGrpc?param=222
-kubectl apply -n consul-demo -f $BIZ_HOME/demo/cloud/demo/client/client-deploy.yaml
+curl $BIZ_HOME/demo/cloud/demo/client/client-deploy.yaml -o /tmp/client-deploy.yaml
+kubectl apply -n consul-demo -f /tmp/client-deploy.yaml
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=client-demo --timeout=180s
 
