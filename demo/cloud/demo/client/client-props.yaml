@@ -8,7 +8,7 @@ data:
     tiny.local-address=10
     tiny.local-port=9193
     ###
-    tiny.sc-address=sc-tiny.consul-demo.svc.cluster.local:9191
+    tiny.sc-address=${tiny_svc_cluster_ip}:9191
     #Tiny Parameters
     tiny.params.package-max-size=15728640
     tiny.params.sc-reconnect-interval=1000
@@ -20,7 +20,7 @@ data:
 
     spring.application.name=tiny-demo-client-server
     ###
-    spring.cloud.consul.host=consul.default.svc.cluster.local
+    spring.cloud.consul.host=${consul_svc_cluster_ip}
     spring.cloud.consul.port=8500
     spring.cloud.consul.discovery.prefer-ip-address=true
     spring.cloud.consul.discovery.instanceId=${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
