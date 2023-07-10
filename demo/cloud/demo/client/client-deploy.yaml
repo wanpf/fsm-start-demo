@@ -24,7 +24,7 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: serverAddress
-          value: "grpc-server.consul-derive.svc.cluster.local:8082"
+          value: "${server_demo_pod_ip}:8082"
         volumeMounts:
         - mountPath: /home/java/config
           name: javacfg

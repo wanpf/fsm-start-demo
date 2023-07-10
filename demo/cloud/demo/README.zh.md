@@ -164,6 +164,8 @@ kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo --timeo
 serverDemo=$(kubectl get pod -n consul-demo -l app=server-demo -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $serverDemo
 
+export server_demo_pod_ip=$(kubectl get pod -n consul-demo -l app=server-demo -o jsonpath='{.items[0].status.podIP}')
+
 curl $BIZ_HOME/demo/cloud/demo/client/client-props.yaml -o /tmp/client-props.yaml
 cat /tmp/client-props.yaml | envsubst | kubectl apply -n consul-demo -f -
 #kubectl get configmap -n consul-demo client-application-properties -o yaml
@@ -171,7 +173,7 @@ cat /tmp/client-props.yaml | envsubst | kubectl apply -n consul-demo -f -
 # http-test-api: http://{{HOST}}/api/sc/testHttpApi?msg=111
 # grpc-test-api: http://{{HOST}}/api/sc/tetGrpc?param=222
 curl $BIZ_HOME/demo/cloud/demo/client/client-deploy.yaml -o /tmp/client-deploy.yaml
-kubectl apply -n consul-demo -f /tmp/client-deploy.yaml
+cat /tmp/client-deploy.yaml | envsubst | kubectl apply -n consul-demo -f -
 # 等待依赖的 POD 正常启动
 kubectl wait --for=condition=ready pod -n consul-demo -l app=client-demo --timeout=180s
 
