@@ -43,7 +43,6 @@ kubectl port-forward consul-0 8500:8500
 ```bash
 export fsm_namespace=fsm-system
 export fsm_mesh_name=fsm
-export dns_svc_ip="$(kubectl get svc -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].spec.clusterIP}')"
 export consul_svc_addr="$(kubectl get svc -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
 fsm install \
     --mesh-name "$fsm_mesh_name" \
@@ -60,8 +59,6 @@ fsm install \
     --set=fsm.cloudConnector.consul.httpAddr=$consul_svc_addr:8500 \
     --set=fsm.cloudConnector.consul.passingOnly=false \
     --set=fsm.cloudConnector.consul.suffixTag=version \
-    --set=fsm.localDNSProxy.enable=true \
-    --set=fsm.localDNSProxy.primaryUpstreamDNSServerIPAddr="${dns_svc_ip}" \
     --timeout=900s
 
 #用于承载转义的consul k8s services 和 endpoints
@@ -143,13 +140,16 @@ fsm namespace add consul-demo
 curl $BIZ_HOME/demo/cloud/demo/tiny/tiny-deploy.yaml -o /tmp/tiny-deploy.yaml
 kubectl apply -n consul-demo -f /tmp/tiny-deploy.yaml
 # 等待依赖的 POD 正常启动
+sleep 5
 kubectl wait --for=condition=ready pod -n consul-demo -l app=sc-tiny --timeout=180s
 
 tiny=$(kubectl get pod -n consul-demo -l app=sc-tiny -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $tiny
 
-export consul_svc_cluster_ip="$(kubectl get svc -n default -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
-export tiny_svc_cluster_ip="$(kubectl get svc -n consul-demo -l app=tiny -o jsonpath='{.items[0].spec.clusterIP}')"
+export consul_svc_cluster_ip=consul.default.svc.cluster.local
+#export consul_svc_cluster_ip="$(kubectl get svc -n default -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
+export tiny_svc_cluster_ip=sc-tiny.consul-demo.svc.cluster.local
+#export tiny_svc_cluster_ip="$(kubectl get svc -n consul-demo -l app=tiny -o jsonpath='{.items[0].spec.clusterIP}')"
 
 curl $BIZ_HOME/demo/cloud/demo/server/server-props.yaml -o /tmp/server-props.yaml
 cat /tmp/server-props.yaml | envsubst | kubectl apply -n consul-demo -f -
@@ -159,6 +159,7 @@ cat /tmp/server-props.yaml | envsubst | kubectl apply -n consul-demo -f -
 curl $BIZ_HOME/demo/cloud/demo/server/server-deploy.yaml -o /tmp/server-deploy.yaml
 kubectl apply -n consul-demo -f /tmp/server-deploy.yaml
 # 等待依赖的 POD 正常启动
+sleep 5
 kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo --timeout=180s
 
 serverDemo=$(kubectl get pod -n consul-demo -l app=server-demo -o jsonpath='{.items..metadata.name}')
@@ -175,6 +176,7 @@ cat /tmp/client-props.yaml | envsubst | kubectl apply -n consul-demo -f -
 curl $BIZ_HOME/demo/cloud/demo/client/client-deploy.yaml -o /tmp/client-deploy.yaml
 cat /tmp/client-deploy.yaml | envsubst | kubectl apply -n consul-demo -f -
 # 等待依赖的 POD 正常启动
+sleep 5
 kubectl wait --for=condition=ready pod -n consul-demo -l app=client-demo --timeout=180s
 
 clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
