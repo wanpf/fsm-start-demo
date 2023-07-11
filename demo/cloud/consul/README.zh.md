@@ -5,7 +5,7 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.0.1
+release=v1.0.2
 curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/fsm version
 cp ./${system}-${arch}/fsm /usr/local/bin/
@@ -34,24 +34,27 @@ kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/service.ya
 kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/statefulset.yaml
 
 kubectl wait --for=condition=ready pod -l app=consul --timeout=180s
+
+kubectl port-forward consul-0 8500:8500
 ```
 
 ## 3. 安装 fsm
 
 ```bash
-export fsm_namespace=fsm-system 
-export fsm_mesh_name=fsm 
+export fsm_namespace=fsm-system
+export fsm_mesh_name=fsm
 export consul_svc_addr="$(kubectl get svc -l name=consul -o jsonpath='{.items[0].spec.clusterIP}')"
 fsm install \
     --mesh-name "$fsm_mesh_name" \
     --fsm-namespace "$fsm_namespace" \
     --set=fsm.certificateProvider.kind=tresor \
     --set=fsm.image.registry=cybwan \
-    --set=fsm.image.tag=1.0.1 \
+    --set=fsm.image.tag=1.0.2 \
     --set=fsm.image.pullPolicy=Always \
-    --set=fsm.sidecarLogLevel=error \
+    --set=fsm.sidecarLogLevel=debug \
     --set=fsm.controllerLogLevel=warn \
-    --set=fsm.featureFlags.enableHostIPDefaultRoute=true \
+    --set=fsm.serviceAccessMode=mixed \
+    --set=fsm.featureFlags.enableAutoDefaultRoute=true \
     --set=fsm.deployConsulConnector=true \
     --set=fsm.cloudConnector.deriveNamespace=consul-derive \
     --set=fsm.cloudConnector.consul.httpAddr=$consul_svc_addr:8500 \
