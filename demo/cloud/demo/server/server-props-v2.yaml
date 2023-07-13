@@ -33,7 +33,7 @@ data:
     spring.cloud.consul.discovery.prefer-ip-address=true
     spring.cloud.consul.discovery.instanceId=${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
     spring.cloud.consul.discovery.health-check-path=/health
-    spring.cloud.consul.discovery.tags=version=v1
+    spring.cloud.consul.discovery.tags=version=v2
     
     management.server.servlet.context-path=/
     management.endpoints.enabled-by-default=true
