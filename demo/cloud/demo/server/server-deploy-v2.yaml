@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: server-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-demo-v2
+  labels:
+    app: server-demo
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-demo
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: server-demo
+        version: v2
+    spec:
+      serviceAccountName: server-demo
+      containers:
+      - name: server-demo
+        image: spurringworld/tiny-server-demo:0.0.2
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: /home/java/config
+          name: javacfg
+      volumes:
+      - name: javacfg
+        configMap:
+          name: server-application-properties
+          items:
+            - key: "application.properties"
+              path: "application.properties"

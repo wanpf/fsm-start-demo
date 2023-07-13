@@ -20,7 +20,7 @@ spec:
       serviceAccountName: client-demo
       containers:
       - name: client-demo
-        image: spurringworld/sc-client-demo:0.0.1
+        image: spurringworld/tiny-client-demo:0.0.1
         imagePullPolicy: IfNotPresent
         env:
         - name: serverAddress
