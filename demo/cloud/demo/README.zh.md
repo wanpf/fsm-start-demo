@@ -151,25 +151,34 @@ export consul_svc_cluster_ip=consul.default.svc.cluster.local
 export tiny_svc_cluster_ip=sc-tiny.consul-demo.svc.cluster.local
 #export tiny_svc_cluster_ip="$(kubectl get svc -n consul-demo -l app=tiny -o jsonpath='{.items[0].spec.clusterIP}')"
 
-curl $BIZ_HOME/demo/cloud/demo/server/server-props.yaml -o /tmp/server-props.yaml
-cat /tmp/server-props.yaml | envsubst | kubectl apply -n consul-demo -f -
-#kubectl get configmap -n consul-demo server-application-properties -o yaml
+curl $BIZ_HOME/demo/cloud/demo/server/server-props-v1.yaml -o /tmp/server-props-v1.yaml
+cat /tmp/server-props-v1.yaml | envsubst | kubectl apply -n consul-demo -f -
 # http-port: 8082
 # gRPC-port: 9292
-curl $BIZ_HOME/demo/cloud/demo/server/server-deploy.yaml -o /tmp/server-deploy.yaml
-kubectl apply -n consul-demo -f /tmp/server-deploy.yaml
+curl $BIZ_HOME/demo/cloud/demo/server/server-deploy-v1.yaml -o /tmp/server-deploy-v1.yaml
+kubectl apply -n consul-demo -f /tmp/server-deploy-v1.yaml
 # 等待依赖的 POD 正常启动
 sleep 5
-kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo -l version=v1 --timeout=180s
+serverDemoV1=$(kubectl get pod -n consul-demo -l app=server-demo -l version=v1 -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $serverDemoV1
 
-serverDemo=$(kubectl get pod -n consul-demo -l app=server-demo -o jsonpath='{.items..metadata.name}')
-kubectl logs -n consul-demo $serverDemo
+curl $BIZ_HOME/demo/cloud/demo/server/server-props-v2.yaml -o /tmp/server-props-v2.yaml
+cat /tmp/server-props-v2.yaml | envsubst | kubectl apply -n consul-demo -f -
+# http-port: 8082
+# gRPC-port: 9292
+curl $BIZ_HOME/demo/cloud/demo/server/server-deploy-v2.yaml -o /tmp/server-deploy-v2.yaml
+kubectl apply -n consul-demo -f /tmp/server-deploy-v2.yaml
+# 等待依赖的 POD 正常启动
+sleep 5
+kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo -l version=v2 --timeout=180s
+serverDemoV2=$(kubectl get pod -n consul-demo -l app=server-demo -l version=v2 -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $serverDemoV2
 
 export server_demo_pod_ip=$(kubectl get pod -n consul-demo -l app=server-demo -o jsonpath='{.items[0].status.podIP}')
 
 curl $BIZ_HOME/demo/cloud/demo/client/client-props.yaml -o /tmp/client-props.yaml
 cat /tmp/client-props.yaml | envsubst | kubectl apply -n consul-demo -f -
-#kubectl get configmap -n consul-demo client-application-properties -o yaml
 # 访问端口： 8083
 # http-test-api: http://{{HOST}}/api/sc/testHttpApi?msg=111
 # grpc-test-api: http://{{HOST}}/api/sc/tetGrpc?param=222
@@ -193,12 +202,14 @@ clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.it
 
 # 测试 http-test-api: http://{{HOST}}/api/sc/testHttpApi?msg=111
 kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/testHttpApi?msg=111
 ```
 
 正确返回结果类似于:
 
 ```json
-MTExLC1TdWNjZXNz
+111,-Success:v2
+111,-Success:v1
 ```
 
 查看服务日志:
@@ -215,13 +226,19 @@ curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}
 clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items[0].status.podIP}')
 
 # 测试 grpc-test-api: http://{{HOST}}/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
 ```
 
 正确返回结果类似于:
 
 ```json
-respTime for param:[222] is [2023-07-08 06:28:31]
+respTime for param:[222] is [2023-07-13 15:42:01]:v2
+respTime for param:[222] is [2023-07-13 15:42:02]:v1
+respTime for param:[222] is [2023-07-13 15:42:18]:v2
+respTime for param:[222] is [2023-07-13 15:42:19]:v1
 ```
 
 查看服务日志:
@@ -233,34 +250,117 @@ kubectl logs -n consul-demo $clientDemo
 
 ### 4.8 分流测试
 
-设置分流策略:
+#### 4.8.1 设置分流策略:
 
 ```
 kubectl apply -n consul-derive -f - <<EOF
 apiVersion: specs.smi-spec.io/v1alpha4
 kind: HTTPRouteGroup
 metadata:
-  name: grpc-server-v1
+  name: server-v1
 spec:
   matches:
   - name: tag
     headers:
-    - "version": "v1"
+    - "versionTag": "v1"
+EOF
+
+kubectl apply -n consul-derive -f - <<EOF
+apiVersion: specs.smi-spec.io/v1alpha4
+kind: HTTPRouteGroup
+metadata:
+  name: server-v2
+spec:
+  matches:
+  - name: tag
+    headers:
+    - "versionTag": "v2"
 EOF
 
 kubectl apply -n consul-derive -f - <<EOF
 apiVersion: split.smi-spec.io/v1alpha4
 kind: TrafficSplit
 metadata:
-  name: grpc-server-split
+  name: grpc-server-split-v1
 spec:
   service: grpc-server
   matches:
   - kind: HTTPRouteGroup
-    name: grpc-server-v1
+    name: server-v1
   backends:
   - service: grpc-server-v1
-    weight: 50
+    weight: 100
+EOF
+
+kubectl apply -n consul-derive -f - <<EOF
+apiVersion: split.smi-spec.io/v1alpha4
+kind: TrafficSplit
+metadata:
+  name: grpc-server-split-v2
+spec:
+  service: grpc-server
+  matches:
+  - kind: HTTPRouteGroup
+    name: server-v2
+  backends:
+  - service: grpc-server-v2
+    weight: 100
 EOF
 ```
 
+#### 4.8.2 测试指令 一
+
+```bash
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items[0].status.podIP}')
+
+# 测试 http-test-api: http://{{HOST}}/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+```
+
+正确返回结果类似于:
+
+```json
+111,-Success:v2
+111,-Success:v1
+```
+
+查看服务日志:
+
+```bash
+clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $clientDemo
+```
+
+#### 4.8.3 测试指令 二
+
+```bash
+curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}')"
+clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items[0].status.podIP}')
+
+# 测试 grpc-test-api: http://{{HOST}}/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+```
+
+正确返回结果类似于:
+
+```json
+respTime for param:[222] is [2023-07-13 15:42:01]:v2
+respTime for param:[222] is [2023-07-13 15:42:02]:v1
+respTime for param:[222] is [2023-07-13 15:42:18]:v2
+respTime for param:[222] is [2023-07-13 15:42:19]:v1
+```
+
+查看服务日志:
+
+```bash
+clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
+kubectl logs -n consul-demo $clientDemo
+```
+
+### 
