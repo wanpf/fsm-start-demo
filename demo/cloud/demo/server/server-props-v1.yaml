@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-v1-application-properties
+data:
+  application.properties: |
+    #Tiny app name
+    tiny.app-name=TinyHelloService
+    
+    #Tiny local node
+    tiny.local-port=9192
+    ###
+    tiny.local-address=10
+    
+    ###Tiny SC server
+    tiny.sc-address=${tiny_svc_cluster_ip}:9191
+
+    #Tiny Parameters
+    tiny.params.package-max-size=15728640
+    tiny.params.sc-reconnect-interval=1000
+    tiny.params.stop-start-fail=true
+    tiny.params.request-time-out=60000
+    
+    server.port=8082
+    
+    grpc.server.address=0.0.0.0
+    grpc.server.port=9292
+    
+    spring.application.name=grpc-server
+    ###
+    spring.cloud.consul.host=${consul_svc_cluster_ip}
+    spring.cloud.consul.port=8500
+    spring.cloud.consul.discovery.prefer-ip-address=true
+    spring.cloud.consul.discovery.instanceId=${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+    spring.cloud.consul.discovery.health-check-path=/health
+    spring.cloud.consul.discovery.tags=version=v1
+    
+    management.server.servlet.context-path=/
+    management.endpoints.enabled-by-default=true
+    management.endpoints.web.exposure.include=*
+    management.endpoints.web.base-path=/
+    management.endpoints.jmx.exposure.include=*
+    management.endpoints.shutdown.enabled=false
+    management.metrics.export.prometheus.enabled=true
+    management.metrics.distribution.percentiles-histogram[http.server.requests]=true

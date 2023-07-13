@@ -33,7 +33,7 @@ spec:
       volumes:
       - name: javacfg
         configMap:
-          name: server-application-properties
+          name: server-v2-application-properties
           items:
             - key: "application.properties"
               path: "application.properties"
