@@ -51,7 +51,7 @@ fsm install \
     --set=fsm.image.registry=cybwan \
     --set=fsm.image.tag=1.0.2 \
     --set=fsm.image.pullPolicy=Always \
-    --set=fsm.sidecarLogLevel=debug \
+    --set=fsm.sidecarLogLevel=error \
     --set=fsm.controllerLogLevel=warn \
     --set=fsm.serviceAccessMode=mixed \
     --set=fsm.deployConsulConnector=true \
