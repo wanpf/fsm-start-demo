@@ -226,13 +226,13 @@ curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}
 clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items[0].status.podIP}')
 
 # 测试 grpc-test-api: http://{{HOST}}/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
 ```
 
-正确返回结果类似于:
+正确返回结果类似于(Robin):
 
 ```json
 respTime for param:[222] is [2023-07-13 15:42:01]:v2
@@ -262,7 +262,7 @@ spec:
   matches:
   - name: tag
     headers:
-    - "versionTag": "v1"
+    - "versiontag": "v1"
 EOF
 
 kubectl apply -n consul-derive -f - <<EOF
@@ -274,7 +274,7 @@ spec:
   matches:
   - name: tag
     headers:
-    - "versionTag": "v2"
+    - "versiontag": "v2"
 EOF
 
 kubectl apply -n consul-derive -f - <<EOF
@@ -315,16 +315,19 @@ curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}
 clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items[0].status.podIP}')
 
 # 测试 http-test-api: http://{{HOST}}/api/sc/testHttpApi?msg=111
-kubectl exec $curl -n curl -- curl -s http://$clientDemo:8083/api/sc/testHttpApi?msg=111
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v1" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v1" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v2" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v2" http://$clientDemo:8083/api/sc/testHttpApi?msg=111
 ```
 
 正确返回结果类似于:
 
 ```json
-111,-Success:v2
 111,-Success:v1
+111,-Success:v1
+111,-Success:v2
+111,-Success:v2
 ```
 
 查看服务日志:
@@ -341,19 +344,19 @@ curl="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items..metadata.name}
 clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items[0].status.podIP}')
 
 # 测试 grpc-test-api: http://{{HOST}}/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
-kubectl exec $curl -n curl -- curl -s -H "versionTag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v1" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
+kubectl exec $curl -n curl -- curl -s -H "versiontag:v2" http://$clientDemo:8083/api/sc/tetGrpc?param=222
 ```
 
 正确返回结果类似于:
 
 ```json
-respTime for param:[222] is [2023-07-13 15:42:01]:v2
+respTime for param:[222] is [2023-07-13 15:42:01]:v1
 respTime for param:[222] is [2023-07-13 15:42:02]:v1
 respTime for param:[222] is [2023-07-13 15:42:18]:v2
-respTime for param:[222] is [2023-07-13 15:42:19]:v1
+respTime for param:[222] is [2023-07-13 15:42:19]:v2
 ```
 
 查看服务日志:
@@ -362,5 +365,3 @@ respTime for param:[222] is [2023-07-13 15:42:19]:v1
 clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $clientDemo
 ```
-
-### 
