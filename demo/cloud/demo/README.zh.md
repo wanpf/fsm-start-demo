@@ -324,10 +324,10 @@ kubectl exec $curl -n curl -- curl -s -H "versiontag:v2" http://$clientDemo:8083
 正确返回结果类似于:
 
 ```json
-111,-Success:v1
-111,-Success:v1
-111,-Success:v2
-111,-Success:v2
+111,v1-Success:v1
+111,v1-Success:v
+111,v2-Success:v2
+111,v2-Success:v2
 ```
 
 查看服务日志:
