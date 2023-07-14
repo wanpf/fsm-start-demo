@@ -33,7 +33,7 @@ kubectl create configmap consul --from-file=/tmp/config.json
 kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/service.yaml
 kubectl apply -f $DEMO_HOME/demo/cloud/consul/kubernetes-vault/consul/statefulset.yaml
 
-kubectl wait --for=condition=ready pod -l app=consul --timeout=180s
+kubectl wait --for=condition=ready pod -l app=consul --timeout=900s
 
 kubectl port-forward consul-0 8500:8500
 ```
@@ -77,7 +77,7 @@ kubectl create namespace curl
 kubectl apply -n curl -f https://raw.githubusercontent.com/cybwan/fsm-start-demo/main/demo/access-control/curl.yaml
 
 #等待 POD 正常启动
-kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=180s
+kubectl wait --for=condition=ready pod -n curl -l app=curl --timeout=900s
 ```
 
 ### 4.2 启用宽松流量模式
@@ -141,7 +141,7 @@ curl $BIZ_HOME/demo/cloud/demo/tiny/tiny-deploy.yaml -o /tmp/tiny-deploy.yaml
 kubectl apply -n consul-demo -f /tmp/tiny-deploy.yaml
 # 等待依赖的 POD 正常启动
 sleep 5
-kubectl wait --for=condition=ready pod -n consul-demo -l app=sc-tiny --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=sc-tiny --timeout=900s
 
 tiny=$(kubectl get pod -n consul-demo -l app=sc-tiny -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $tiny
@@ -159,7 +159,7 @@ curl $BIZ_HOME/demo/cloud/demo/server/server-deploy-v1.yaml -o /tmp/server-deplo
 kubectl apply -n consul-demo -f /tmp/server-deploy-v1.yaml
 # 等待依赖的 POD 正常启动
 sleep 5
-kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo -l version=v1 --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo -l version=v1 --timeout=900s
 serverDemoV1=$(kubectl get pod -n consul-demo -l app=server-demo -l version=v1 -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $serverDemoV1
 
@@ -171,7 +171,7 @@ curl $BIZ_HOME/demo/cloud/demo/server/server-deploy-v2.yaml -o /tmp/server-deplo
 kubectl apply -n consul-demo -f /tmp/server-deploy-v2.yaml
 # 等待依赖的 POD 正常启动
 sleep 5
-kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo -l version=v2 --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=server-demo -l version=v2 --timeout=900s
 serverDemoV2=$(kubectl get pod -n consul-demo -l app=server-demo -l version=v2 -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $serverDemoV2
 
@@ -186,7 +186,7 @@ curl $BIZ_HOME/demo/cloud/demo/client/client-deploy.yaml -o /tmp/client-deploy.y
 cat /tmp/client-deploy.yaml | envsubst | kubectl apply -n consul-demo -f -
 # 等待依赖的 POD 正常启动
 sleep 5
-kubectl wait --for=condition=ready pod -n consul-demo -l app=client-demo --timeout=180s
+kubectl wait --for=condition=ready pod -n consul-demo -l app=client-demo --timeout=900s
 
 clientDemo=$(kubectl get pod -n consul-demo -l app=client-demo -o jsonpath='{.items..metadata.name}')
 kubectl logs -n consul-demo $clientDemo
