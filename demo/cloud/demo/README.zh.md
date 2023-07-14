@@ -5,8 +5,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.0.1
-curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.0.2
+curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/fsm version
 cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
@@ -48,8 +48,8 @@ fsm install \
     --mesh-name "$fsm_mesh_name" \
     --fsm-namespace "$fsm_namespace" \
     --set=fsm.certificateProvider.kind=tresor \
-    --set=fsm.image.registry=flomesh \
-    --set=fsm.image.tag=1.0.1 \
+    --set=fsm.image.registry=cybwan \
+    --set=fsm.image.tag=1.0.2 \
     --set=fsm.image.pullPolicy=Always \
     --set=fsm.sidecarLogLevel=error \
     --set=fsm.controllerLogLevel=warn \
