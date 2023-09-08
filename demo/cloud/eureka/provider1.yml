@@ -12,7 +12,7 @@ data:
     spring:
       application:
         # 应用名称
-        name: provider-user
+        name: cloud-provider
     
     # eureka 配置
     eureka:
