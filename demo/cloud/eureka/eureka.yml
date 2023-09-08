@@ -1,0 +1,32 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: eureka-service
+spec:
+  ports:
+    - port: 8761
+      name: eureka-port
+  selector:
+    app: eureka-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eureka-service
+  labels:
+    app: eureka-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eureka-service
+  template:
+    metadata:
+      labels:
+        app: eureka-service
+    spec:
+      containers:
+        - name: eureka-service
+          image: cybwan/spring-eureka-demo:server-eureka
+          ports:
+            - containerPort: 8761

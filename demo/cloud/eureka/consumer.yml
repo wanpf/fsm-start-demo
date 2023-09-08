@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consumer-application-yml
+data:
+  application.yml: |
+    server:
+      port: 8001
+      servlet:
+        context-path:
+    spring:
+      application:
+        name: cloud-consumer
+    
+    # eureka 配置
+    eureka:
+      client:
+        serviceUrl:
+          defaultZone: http://flomesh:123456@eureka-service.disco:8761/eureka
+      instance:
+        instance-id: cloud-consumer #修改Eureka上的默认描述信息
+        prefer-ip-address: true
+    logging:
+      level:
+        root: INFO
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: consumer
+spec:
+  ports:
+    - port: 8001
+      name: consumer-port
+  selector:
+    app: consumer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  labels:
+    app: consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      containers:
+        - name: consumer
+          image: cybwan/spring-eureka-demo:consumer
+          ports:
+            - containerPort: 8001
+          volumeMounts:
+            - mountPath: /config
+              name: javacfg
+      volumes:
+        - name: javacfg
+          configMap:
+            name: consumer-application-yml
+            items:
+              - key: "application.yml"
+                path: "application.yml"

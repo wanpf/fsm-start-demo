@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provider2-application-yml
+data:
+  application.yml: |
+    # 应用端口
+    server:
+      port: 7902
+      servlet:
+        context-path:
+    spring:
+      application:
+        # 应用名称
+        name: provider-user
+    
+    # eureka 配置
+    eureka:
+      client:
+        serviceUrl:
+          defaultZone: http://flomesh:123456@eureka-service.disco:8761/eureka
+      instance:
+        instance-id: cloud-provider2 #修改Eureka上的默认描述信息
+        prefer-ip-address: true
+    logging:
+      level:
+        root: INFO
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: provider2
+spec:
+  ports:
+    - port: 7902
+      name: provider2-port
+  selector:
+    app: provider2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: provider2
+  labels:
+    app: provider2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: provider2
+  template:
+    metadata:
+      labels:
+        app: provider2
+    spec:
+      containers:
+        - name: provider2
+          image: cybwan/spring-eureka-demo:provider2
+          ports:
+            - containerPort: 7902
+          volumeMounts:
+            - mountPath: /config
+              name: javacfg
+      volumes:
+        - name: javacfg
+          configMap:
+            name: provider2-application-yml
+            items:
+              - key: "application.yml"
+                path: "application.yml"
