@@ -5,8 +5,8 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.0.1
-curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
+release=v1.1.1
+curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/fsm version
 cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
@@ -55,7 +55,7 @@ fsm install \
     --set=fsm.controllerLogLevel=warn \
     --set=fsm.serviceAccessMode=mixed \
     --set=fsm.deployConsulConnector=true \
-    --set=fsm.cloudConnector.deriveNamespace=consul-derive \
+    --set=fsm.cloudConnector.consul.deriveNamespace=consul-derive \
     --set=fsm.cloudConnector.consul.httpAddr=$consul_svc_addr:8500 \
     --set=fsm.cloudConnector.consul.passingOnly=false \
     --set=fsm.cloudConnector.consul.suffixTag=version \
@@ -64,6 +64,7 @@ fsm install \
 #用于承载转义的consul k8s services 和 endpoints
 kubectl create namespace consul-derive
 fsm namespace add consul-derive
+kubectl patch namespace consul-derive -p '{"metadata":{"annotations":{"flomesh.io/mesh-service-sync":"consul"}}}'  --type=merge
 ```
 
 ## 4. Consul集成测试
