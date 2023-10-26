@@ -2,7 +2,7 @@
 
 https://github.com/flomesh-io/fsm/tree/main/docs/tests/gateway-api
 
-## TOPO
+## 部署拓扑
 
 ```bash
 Consul：
@@ -12,9 +12,9 @@ K3d：
 192.168.10.49
 ```
 
-### 部署 FSM
+## 部署 FSM
 
-安装 FSM CLI
+### 安装 FSM CLI
 
 ``` shell
 system=$(uname -s | tr [:upper:] [:lower:])
@@ -25,7 +25,15 @@ curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release
 sudo cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-``` shell
+``` 部署 FSM 控制平面
+
+**Connector 同 FGW 的集成:**
+
+1. Connector 只同 FSM 控制平面下的 Gateway 自动集成
+2. Connector 同 Gateway 集成当前仅支持 HTTPRoute 和 GRP Route
+3. Connector 同 Gateway 集成, 优先前缀匹配listener的name, 其次完全匹配 listener 的 protocol
+
+```bash
 export fsm_namespace=fsm-system
 export fsm_mesh_name=fsm
 fsm install \
