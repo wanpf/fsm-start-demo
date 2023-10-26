@@ -36,6 +36,10 @@ fsm install \
     --set=fsm.image.pullPolicy=Always \
     --set fsm.fsmIngress.enabled=false \
     --set fsm.fsmGateway.enabled=true \
+    --set fsm.featureFlags.enableValidateHTTPRouteHostnames=false \
+    --set fsm.featureFlags.enableValidateGRPCRouteHostnames=false \
+    --set fsm.featureFlags.enableValidateTLSRouteHostnames=false \
+    --set fsm.featureFlags.enableValidateGatewayListenerHostname=false \
     --set=fsm.controllerLogLevel=debug \
     --set=fsm.serviceAccessMode=mixed \
     --set=fsm.deployConsulConnector=true \
@@ -83,7 +87,7 @@ spec:
   gatewayClassName: fsm-gateway-cls
   listeners:
     - protocol: HTTP
-      port: 10080
+      port: 18080
       name: nginx
 EOF
 
@@ -96,9 +100,9 @@ spec:
   parentRefs:
   - name: nginx-gw
     namespace: default
-    port: 10080
+    port: 18080
   hostnames:
-  - "2-2-2-2-10080"
+  - "2.2.2.2"
   rules:
   - matches:
     - path:
