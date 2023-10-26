@@ -16,7 +16,7 @@ K3d：
 
 ### 安装 FSM CLI
 
-``` shell
+``` bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
 release=v1.1.4
@@ -25,7 +25,7 @@ curl -L https://github.com/cybwan/fsm/releases/download/${release}/fsm-${release
 sudo cp ./${system}-${arch}/fsm /usr/local/bin/
 ```
 
-``` 部署 FSM 控制平面
+### 部署 FSM 控制平面
 
 **Connector 同 FGW 的集成:**
 
