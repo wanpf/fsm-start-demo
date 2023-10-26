@@ -107,7 +107,7 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: /bar
+        value: /
     backendRefs:
     - name: poc-demo-http-server
       namespace: consul-derive
