@@ -146,7 +146,7 @@ gateway update sliding window 是 2~10 秒
 ### 关于passingOnly
 
 fsm.cloudConnector.consul.passingOnly这个参数
-为true时,只从consul取那些通过健康检查的service;否则去所有注册的service,包括未通过健康检查的
+为true时,只从consul取那些通过健康检查的service;否则取所有注册的service,包括未通过健康检查的
 
 部署时要不要设置,原则是不设置,即使用默认值true
 
