@@ -6,7 +6,7 @@
 ```bash
 system=$(uname -s | tr [:upper:] [:lower:])
 arch=$(dpkg --print-architecture)
-release=v1.0.0
+release=v1.1.4
 curl -L https://github.com/flomesh-io/fsm/releases/download/${release}/fsm-${release}-${system}-${arch}.tar.gz | tar -vxzf -
 ./${system}-${arch}/fsm version
 cp ./${system}-${arch}/fsm /usr/local/bin/
@@ -23,7 +23,7 @@ fsm install \
     --fsm-namespace "$fsm_namespace" \
     --set=fsm.certificateProvider.kind=tresor \
     --set=fsm.image.registry=flomesh \
-    --set=fsm.image.tag=1.0.0 \
+    --set=fsm.image.tag=1.1.4 \
     --set=fsm.image.pullPolicy=Always \
     --set=fsm.sidecarLogLevel=warn \
     --set=fsm.controllerLogLevel=warn \
@@ -61,131 +61,256 @@ kubectl apply -f - <<EOF
 kind: Plugin
 apiVersion: plugin.flomesh.io/v1alpha1
 metadata:
-  name: cors-policy
+  name: traffic-coloring
 spec:
   priority: 165
   pipyscript: |+
     ((
-      cacheTTL = val => (
-        val?.indexOf('s') > 0 && (
-        val.replace('s', '')
-        ) ||
-        val?.indexOf('m') > 0 && (
-        val.replace('m', '') * 60
-        ) ||
-        val?.indexOf('h') > 0 && (
-        val.replace('h', '') * 3600
-        ) ||
-        val?.indexOf('d') > 0 && (
-        val.replace('d', '') * 86400
-        ) ||
-        0
-      ),
-      originMatch = origin => (
-        (origin || []).map(
-        o => (
-          o?.exact && (
-            url => url === o.exact
-          ) ||
-          o?.prefix && (
-            url => url.startsWith(o.prefix)
-          ) ||
-          o?.regex && (
-            (match = new RegExp(o.regex)) => (
-            url => match.test(url)
+  getParameters = path => (
+    (
+      params = {},
+      qsa,
+      qs,
+      arr,
+      kv,
+    ) => (
+      path && (
+        (qsa = path.split('?')[1]) && (
+          (qs = qsa.split('#')[0]) && (
+            (arr = qs.split('&')) && (
+              arr.forEach(
+                p => (
+                  kv = p.split('='),
+                  params[kv[0]] = kv[1]
+                )
+              )
             )
-          )()
-        )
+          )
         )
       ),
-      configCache = new algo.Cache(
-        pluginConfig => (
-        (originHeaders = {}, optionsHeaders = {}) => (
-          pluginConfig?.allowCredentials && (
-            originHeaders['access-control-allow-credentials'] = 'true'
-          ),
-          pluginConfig?.exposeHeaders && (
-            originHeaders['access-control-expose-headers'] = pluginConfig.exposeHeaders.join()
-          ),
-          pluginConfig?.allowMethods && (
-            optionsHeaders['access-control-allow-methods'] = pluginConfig.allowMethods.join()
-          ),
-          pluginConfig?.allowHeaders && (
-            optionsHeaders['access-control-allow-headers'] = pluginConfig.allowHeaders.join()
-          ),
-          pluginConfig?.maxAge && (cacheTTL(pluginConfig?.maxAge) > 0) && (
-            optionsHeaders['access-control-max-age'] = cacheTTL(pluginConfig?.maxAge)
-          ),
-          {
-            originHeaders,
-            optionsHeaders,
-            matchingMap: originMatch(pluginConfig?.allowOrigins)
-          }
+      params
+    )
+  )(),
+
+  makeDictionaryMatches = dictionary => (
+    (
+      tests = Object.entries(dictionary || {}).map(
+        ([type, dict]) => (
+          (type === 'Exact') ? (
+            Object.keys(dict || {}).map(
+              k => (obj => obj?.[k] === dict[k])
+            )
+          ) : (
+            (type === 'Regex') ? (
+              Object.keys(dict || {}).map(
+                k => (
+                  (
+                    regex = new RegExp(dict[k])
+                  ) => (
+                    obj => regex.test(obj?.[k] || '')
+                  )
+                )()
+              )
+            ) : [() => false]
+          )
         )
-        )()
+      )
+    ) => (
+      (tests.length > 0) && (
+        obj => tests.every(a => a.every(f => f(obj)))
+      )
+    )
+  )(),
+
+  pathPrefix = (path, prefix) => (
+    path.startsWith(prefix) && (
+      prefix.endsWith('/') || (
+        (
+          lastChar = path.charAt(prefix.length),
+        ) => (
+          lastChar === '' || lastChar === '/'
+        )
+      )()
+    )
+  ),
+
+  makeHttpMatches = rule => (
+    (
+      matchPath = (
+        (rule?.Path?.Type === 'Regex') && (
+          ((match = null) => (
+            match = new RegExp(rule?.Path?.Path),
+            (path) => match.test(path)
+          ))()
+        ) || (rule?.Path?.Type === 'Exact') && (
+          (path) => path === rule?.Path?.Path
+        ) || (rule?.Path?.Type === 'Prefix') && (
+          (path) => pathPrefix(path, rule?.Path?.Path)
+        ) || rule?.Path?.Type && (
+          () => false
+        )
       ),
-    ) => pipy({
-      _pluginName: '',
-      _pluginConfig: null,
-      _corsHeaders: null,
-      _matchingMap: null,
-      _matching: false,
-      _isOptions: false,
-      _origin: undefined,
-    })
-    .import({
-      __service: 'inbound-http-routing',
-    })
-    .pipeline()
-    .onStart(
-      () => void (
-        _pluginName = __filename.slice(9, -3),
-        _pluginConfig = __service?.Plugins?.[_pluginName],
-        _corsHeaders = configCache.get(_pluginConfig),
-        _matchingMap = _corsHeaders?.matchingMap
+      matchHeaders = makeDictionaryMatches(rule?.Headers),
+      matchMethod = (
+        rule?.Methods && Object.fromEntries((rule.Methods).map(m => [m, true]))
+      ),
+      matchParams = makeDictionaryMatches(rule?.QueryParams),
+    ) => (
+      {
+        config: rule,
+        match: message => (
+          (!matchMethod || matchMethod[message?.head?.method]) && (
+            (!matchPath || matchPath(message?.head?.path?.split('?')[0])) && (
+              (!matchHeaders || matchHeaders(message?.head?.headers)) && (
+                (!matchParams || matchParams(getParameters(message?.head?.path)))
+              )
+            )
+          )
+        )
+      }
+    )
+  )(),
+
+  makeMatchesHandler = matches => (
+    (
+      handlers = [],
+    ) => (
+      handlers = (matches?.Matches || []).map(
+        m => makeHttpMatches(m)
+      ),
+      (handlers.length > 0) && (
+        message => (
+          handlers.find(
+            m => m.match(message)
+          )
+        )
+      )
+    )
+  )(),
+
+  matchesHandlers = new algo.Cache(makeMatchesHandler),
+
+  makeModifierHandler = cfg => (
+    (
+      set = cfg?.Set,
+      add = cfg?.Add,
+      remove = cfg?.Remove,
+    ) => (
+      (set || add || remove) && (
+        msg => (
+          set && set.forEach(
+            e => (msg[e.Name] = e.Value)
+          ),
+          add && add.forEach(
+            e => (
+              msg[e.Name] ? (
+                msg[e.Name] = msg[e.Name] + ',' + e.Value
+              ) : (
+                msg[e.Name] = e.Value
+              )
+            )
+          ),
+          remove && remove.forEach(
+            e => delete msg[e]
+          )
+        )
+      )
+    )
+  )(),
+
+  makeRequestModifierHandler = cfg => (
+    (
+      handlers = (cfg?.Filters || []).filter(
+        e => e?.Type === 'RequestHeaderModifier'
+      ).map(
+        e => makeModifierHandler(e.RequestHeaderModifier)
+      ).filter(
+        e => e
+      )
+    ) => (
+      handlers.length > 0 ? handlers : null
+    )
+  )(),
+
+  requestFilterCache = new algo.Cache(
+    match => makeRequestModifierHandler(match?.Filters)
+  ),
+
+  makeResponseModifierHandler = cfg => (
+    (
+      handlers = (cfg?.Filters || []).filter(
+        e => e?.Type === 'ResponseHeaderModifier'
+      ).map(
+        e => makeModifierHandler(e.ResponseHeaderModifier)
+      ).filter(
+        e => e
+      )
+    ) => (
+      handlers.length > 0 ? handlers : null
+    )
+  )(),
+
+  responseFilterCache = new algo.Cache(
+    match => makeResponseModifierHandler(match)
+  ),
+
+) => pipy({
+  _pluginName: '',
+  _pluginConfig: null,
+  _messageHandler: null,
+  _matchingConfig: null,
+  _requestHandlers: null,
+  _responseHandlers: null,
+})
+
+.import({
+  __service: 'inbound-http-routing',
+})
+
+.pipeline()
+.onStart(
+  () => void (
+    _pluginName = __filename.slice(9, -3),
+    _pluginConfig = __service?.Plugins?.[_pluginName],
+    _messageHandler = matchesHandlers.get(_pluginConfig)
+  )
+)
+.branch(
+  () => _messageHandler, (
+    $=>$
+    .handleMessageStart(
+      msg => (
+        _matchingConfig = _messageHandler(msg)?.config
       )
     )
     .branch(
-      () => _matchingMap, (
+      () => _matchingConfig, (
         $=>$
         .handleMessageStart(
-        msg => (
-          (_origin = msg?.head?.headers?.origin) && (_matching = _matchingMap.find(o => o(_origin))) && (
-            _isOptions = (msg?.head?.method === 'OPTIONS')
-          )
-        )
-        )
-      ), (
-        $=>$
-      )
-    )
-    .branch(
-      () => _matching, (
-        $=>$.branch(
-        () => _isOptions, (
-          $=>$.replaceMessage(
-            () => (
-            new Message({ status: 200, headers: { ..._corsHeaders.originHeaders, ..._corsHeaders.optionsHeaders, 'access-control-allow-origin': _origin } })
-            )
-          )
-        ), (
-          $=>$
-          .chain()
-          .handleMessageStart(
-            msg => (
-            Object.keys(_corsHeaders.originHeaders).forEach(
-              key => msg.head.headers[key] = _corsHeaders.originHeaders[key]
-            ),
-            msg.head.headers['access-control-allow-origin'] = _origin
+          msg => (
+            (_requestHandlers = requestFilterCache.get(_matchingConfig)) && msg?.head?.headers && _requestHandlers.forEach(
+              e => e(msg.head.headers)
             )
           )
         )
+        .chain()
+        .handleMessageStart(
+          msg => (
+            (_responseHandlers = responseFilterCache.get(_matchingConfig)) && msg?.head?.headers && _responseHandlers.forEach(
+              e => e(msg.head.headers)
+            )
+          )
         )
       ), (
         $=>$.chain()
       )
     )
-    )()
+  ), (
+    $=>$.chain()
+  )
+)
+
+)()
 EOF
 ```
 
@@ -197,13 +322,13 @@ kubectl apply -f - <<EOF
 kind: PluginChain
 apiVersion: plugin.flomesh.io/v1alpha1
 metadata:
-  name: cors-policy-chain
+  name: traffic-coloring-chain
   namespace: pipy
 spec:
   chains:
     - name: inbound-http
       plugins:
-        - cors-policy
+        - traffic-coloring
   selectors:
     podSelector:
       matchLabels:
@@ -227,7 +352,7 @@ kubectl apply -f - <<EOF
 kind: PluginConfig
 apiVersion: plugin.flomesh.io/v1alpha1
 metadata:
-  name: cors-policy-config
+  name: traffic-coloring-config
   namespace: pipy
 spec:
   config:
@@ -247,7 +372,7 @@ spec:
     - Content-Encoding
     - Kuma-Revision
     maxAge: 24h
-  plugin: cors-policy
+  plugin: traffic-coloring
   destinationRefs:
     - kind: Service
       name: pipy-ok
