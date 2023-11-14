@@ -1,5 +1,5 @@
-## Cors policy 策略插件
-**通过fsm 给服务设置 cors 策略**
+## Traffic coloring 策略插件
+**fsm通过此插件，对request/response请求头进行修改，实现流量染色功能**
 
 ## 1. 下载并安装 fsm 命令行工具
 
