@@ -356,22 +356,16 @@ metadata:
   namespace: pipy
 spec:
   config:
-    allowCredentials: true
-    allowHeaders:
-    - X-Foo-Bar-1
-    allowMethods:
-    - POST
-    - GET
-    - PATCH
-    - DELETE
-    allowOrigins:
-    - regex: http.*://www.test.cn
-    - exact: http://www.aaa.com
-    - prefix: http://www.bbb.com
-    exposeHeaders:
-    - Content-Encoding
-    - Kuma-Revision
-    maxAge: 24h
+    Matches:
+    - Headers:
+        Exact:
+          x-canary: 'true'
+      Filters:
+      - Type: ResponseHeaderModifier
+        ResponseHeaderModifier:
+          Set:
+          - Name: x-canary
+            Value: 'true'    
   plugin: traffic-coloring
   destinationRefs:
     - kind: Service
