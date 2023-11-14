@@ -66,251 +66,251 @@ spec:
   priority: 165
   pipyscript: |+
     ((
-  getParameters = path => (
-    (
-      params = {},
-      qsa,
-      qs,
-      arr,
-      kv,
-    ) => (
-      path && (
-        (qsa = path.split('?')[1]) && (
-          (qs = qsa.split('#')[0]) && (
-            (arr = qs.split('&')) && (
-              arr.forEach(
-                p => (
-                  kv = p.split('='),
-                  params[kv[0]] = kv[1]
+      getParameters = path => (
+        (
+          params = {},
+          qsa,
+          qs,
+          arr,
+          kv,
+        ) => (
+          path && (
+            (qsa = path.split('?')[1]) && (
+              (qs = qsa.split('#')[0]) && (
+                (arr = qs.split('&')) && (
+                  arr.forEach(
+                    p => (
+                      kv = p.split('='),
+                      params[kv[0]] = kv[1]
+                    )
+                  )
                 )
               )
             )
-          )
+          ),
+          params
         )
-      ),
-      params
-    )
-  )(),
-
-  makeDictionaryMatches = dictionary => (
-    (
-      tests = Object.entries(dictionary || {}).map(
-        ([type, dict]) => (
-          (type === 'Exact') ? (
-            Object.keys(dict || {}).map(
-              k => (obj => obj?.[k] === dict[k])
-            )
-          ) : (
-            (type === 'Regex') ? (
-              Object.keys(dict || {}).map(
-                k => (
-                  (
-                    regex = new RegExp(dict[k])
-                  ) => (
-                    obj => regex.test(obj?.[k] || '')
-                  )
-                )()
-              )
-            ) : [() => false]
-          )
-        )
-      )
-    ) => (
-      (tests.length > 0) && (
-        obj => tests.every(a => a.every(f => f(obj)))
-      )
-    )
-  )(),
-
-  pathPrefix = (path, prefix) => (
-    path.startsWith(prefix) && (
-      prefix.endsWith('/') || (
+      )(),
+    
+      makeDictionaryMatches = dictionary => (
         (
-          lastChar = path.charAt(prefix.length),
-        ) => (
-          lastChar === '' || lastChar === '/'
-        )
-      )()
-    )
-  ),
-
-  makeHttpMatches = rule => (
-    (
-      matchPath = (
-        (rule?.Path?.Type === 'Regex') && (
-          ((match = null) => (
-            match = new RegExp(rule?.Path?.Path),
-            (path) => match.test(path)
-          ))()
-        ) || (rule?.Path?.Type === 'Exact') && (
-          (path) => path === rule?.Path?.Path
-        ) || (rule?.Path?.Type === 'Prefix') && (
-          (path) => pathPrefix(path, rule?.Path?.Path)
-        ) || rule?.Path?.Type && (
-          () => false
-        )
-      ),
-      matchHeaders = makeDictionaryMatches(rule?.Headers),
-      matchMethod = (
-        rule?.Methods && Object.fromEntries((rule.Methods).map(m => [m, true]))
-      ),
-      matchParams = makeDictionaryMatches(rule?.QueryParams),
-    ) => (
-      {
-        config: rule,
-        match: message => (
-          (!matchMethod || matchMethod[message?.head?.method]) && (
-            (!matchPath || matchPath(message?.head?.path?.split('?')[0])) && (
-              (!matchHeaders || matchHeaders(message?.head?.headers)) && (
-                (!matchParams || matchParams(getParameters(message?.head?.path)))
-              )
-            )
-          )
-        )
-      }
-    )
-  )(),
-
-  makeMatchesHandler = matches => (
-    (
-      handlers = [],
-    ) => (
-      handlers = (matches?.Matches || []).map(
-        m => makeHttpMatches(m)
-      ),
-      (handlers.length > 0) && (
-        message => (
-          handlers.find(
-            m => m.match(message)
-          )
-        )
-      )
-    )
-  )(),
-
-  matchesHandlers = new algo.Cache(makeMatchesHandler),
-
-  makeModifierHandler = cfg => (
-    (
-      set = cfg?.Set,
-      add = cfg?.Add,
-      remove = cfg?.Remove,
-    ) => (
-      (set || add || remove) && (
-        msg => (
-          set && set.forEach(
-            e => (msg[e.Name] = e.Value)
-          ),
-          add && add.forEach(
-            e => (
-              msg[e.Name] ? (
-                msg[e.Name] = msg[e.Name] + ',' + e.Value
+          tests = Object.entries(dictionary || {}).map(
+            ([type, dict]) => (
+              (type === 'Exact') ? (
+                Object.keys(dict || {}).map(
+                  k => (obj => obj?.[k] === dict[k])
+                )
               ) : (
-                msg[e.Name] = e.Value
+                (type === 'Regex') ? (
+                  Object.keys(dict || {}).map(
+                    k => (
+                      (
+                        regex = new RegExp(dict[k])
+                      ) => (
+                        obj => regex.test(obj?.[k] || '')
+                      )
+                    )()
+                  )
+                ) : [() => false]
               )
             )
-          ),
-          remove && remove.forEach(
-            e => delete msg[e]
+          )
+        ) => (
+          (tests.length > 0) && (
+            obj => tests.every(a => a.every(f => f(obj)))
           )
         )
-      )
-    )
-  )(),
-
-  makeRequestModifierHandler = cfg => (
-    (
-      handlers = (cfg?.Filters || []).filter(
-        e => e?.Type === 'RequestHeaderModifier'
-      ).map(
-        e => makeModifierHandler(e.RequestHeaderModifier)
-      ).filter(
-        e => e
-      )
-    ) => (
-      handlers.length > 0 ? handlers : null
-    )
-  )(),
-
-  requestFilterCache = new algo.Cache(
-    match => makeRequestModifierHandler(match?.Filters)
-  ),
-
-  makeResponseModifierHandler = cfg => (
-    (
-      handlers = (cfg?.Filters || []).filter(
-        e => e?.Type === 'ResponseHeaderModifier'
-      ).map(
-        e => makeModifierHandler(e.ResponseHeaderModifier)
-      ).filter(
-        e => e
-      )
-    ) => (
-      handlers.length > 0 ? handlers : null
-    )
-  )(),
-
-  responseFilterCache = new algo.Cache(
-    match => makeResponseModifierHandler(match)
-  ),
-
-) => pipy({
-  _pluginName: '',
-  _pluginConfig: null,
-  _messageHandler: null,
-  _matchingConfig: null,
-  _requestHandlers: null,
-  _responseHandlers: null,
-})
-
-.import({
-  __service: 'inbound-http-routing',
-})
-
-.pipeline()
-.onStart(
-  () => void (
-    _pluginName = __filename.slice(9, -3),
-    _pluginConfig = __service?.Plugins?.[_pluginName],
-    _messageHandler = matchesHandlers.get(_pluginConfig)
-  )
-)
-.branch(
-  () => _messageHandler, (
-    $=>$
-    .handleMessageStart(
-      msg => (
-        _matchingConfig = _messageHandler(msg)?.config
+      )(),
+    
+      pathPrefix = (path, prefix) => (
+        path.startsWith(prefix) && (
+          prefix.endsWith('/') || (
+            (
+              lastChar = path.charAt(prefix.length),
+            ) => (
+              lastChar === '' || lastChar === '/'
+            )
+          )()
+        )
+      ),
+    
+      makeHttpMatches = rule => (
+        (
+          matchPath = (
+            (rule?.Path?.Type === 'Regex') && (
+              ((match = null) => (
+                match = new RegExp(rule?.Path?.Path),
+                (path) => match.test(path)
+              ))()
+            ) || (rule?.Path?.Type === 'Exact') && (
+              (path) => path === rule?.Path?.Path
+            ) || (rule?.Path?.Type === 'Prefix') && (
+              (path) => pathPrefix(path, rule?.Path?.Path)
+            ) || rule?.Path?.Type && (
+              () => false
+            )
+          ),
+          matchHeaders = makeDictionaryMatches(rule?.Headers),
+          matchMethod = (
+            rule?.Methods && Object.fromEntries((rule.Methods).map(m => [m, true]))
+          ),
+          matchParams = makeDictionaryMatches(rule?.QueryParams),
+        ) => (
+          {
+            config: rule,
+            match: message => (
+              (!matchMethod || matchMethod[message?.head?.method]) && (
+                (!matchPath || matchPath(message?.head?.path?.split('?')[0])) && (
+                  (!matchHeaders || matchHeaders(message?.head?.headers)) && (
+                    (!matchParams || matchParams(getParameters(message?.head?.path)))
+                  )
+                )
+              )
+            )
+          }
+        )
+      )(),
+    
+      makeMatchesHandler = matches => (
+        (
+          handlers = [],
+        ) => (
+          handlers = (matches?.Matches || []).map(
+            m => makeHttpMatches(m)
+          ),
+          (handlers.length > 0) && (
+            message => (
+              handlers.find(
+                m => m.match(message)
+              )
+            )
+          )
+        )
+      )(),
+    
+      matchesHandlers = new algo.Cache(makeMatchesHandler),
+    
+      makeModifierHandler = cfg => (
+        (
+          set = cfg?.Set,
+          add = cfg?.Add,
+          remove = cfg?.Remove,
+        ) => (
+          (set || add || remove) && (
+            msg => (
+              set && set.forEach(
+                e => (msg[e.Name] = e.Value)
+              ),
+              add && add.forEach(
+                e => (
+                  msg[e.Name] ? (
+                    msg[e.Name] = msg[e.Name] + ',' + e.Value
+                  ) : (
+                    msg[e.Name] = e.Value
+                  )
+                )
+              ),
+              remove && remove.forEach(
+                e => delete msg[e]
+              )
+            )
+          )
+        )
+      )(),
+    
+      makeRequestModifierHandler = cfg => (
+        (
+          handlers = (cfg?.Filters || []).filter(
+            e => e?.Type === 'RequestHeaderModifier'
+          ).map(
+            e => makeModifierHandler(e.RequestHeaderModifier)
+          ).filter(
+            e => e
+          )
+        ) => (
+          handlers.length > 0 ? handlers : null
+        )
+      )(),
+    
+      requestFilterCache = new algo.Cache(
+        match => makeRequestModifierHandler(match?.Filters)
+      ),
+    
+      makeResponseModifierHandler = cfg => (
+        (
+          handlers = (cfg?.Filters || []).filter(
+            e => e?.Type === 'ResponseHeaderModifier'
+          ).map(
+            e => makeModifierHandler(e.ResponseHeaderModifier)
+          ).filter(
+            e => e
+          )
+        ) => (
+          handlers.length > 0 ? handlers : null
+        )
+      )(),
+    
+      responseFilterCache = new algo.Cache(
+        match => makeResponseModifierHandler(match)
+      ),
+    
+    ) => pipy({
+      _pluginName: '',
+      _pluginConfig: null,
+      _messageHandler: null,
+      _matchingConfig: null,
+      _requestHandlers: null,
+      _responseHandlers: null,
+    })
+    
+    .import({
+      __service: 'inbound-http-routing',
+    })
+    
+    .pipeline()
+    .onStart(
+      () => void (
+        _pluginName = __filename.slice(9, -3),
+        _pluginConfig = __service?.Plugins?.[_pluginName],
+        _messageHandler = matchesHandlers.get(_pluginConfig)
       )
     )
     .branch(
-      () => _matchingConfig, (
+      () => _messageHandler, (
         $=>$
         .handleMessageStart(
           msg => (
-            (_requestHandlers = requestFilterCache.get(_matchingConfig)) && msg?.head?.headers && _requestHandlers.forEach(
-              e => e(msg.head.headers)
-            )
+            _matchingConfig = _messageHandler(msg)?.config
           )
         )
-        .chain()
-        .handleMessageStart(
-          msg => (
-            (_responseHandlers = responseFilterCache.get(_matchingConfig)) && msg?.head?.headers && _responseHandlers.forEach(
-              e => e(msg.head.headers)
+        .branch(
+          () => _matchingConfig, (
+            $=>$
+            .handleMessageStart(
+              msg => (
+                (_requestHandlers = requestFilterCache.get(_matchingConfig)) && msg?.head?.headers && _requestHandlers.forEach(
+                  e => e(msg.head.headers)
+                )
+              )
             )
+            .chain()
+            .handleMessageStart(
+              msg => (
+                (_responseHandlers = responseFilterCache.get(_matchingConfig)) && msg?.head?.headers && _responseHandlers.forEach(
+                  e => e(msg.head.headers)
+                )
+              )
+            )
+          ), (
+            $=>$.chain()
           )
         )
       ), (
         $=>$.chain()
       )
     )
-  ), (
-    $=>$.chain()
-  )
-)
-
-)()
+    
+    )()
 EOF
 ```
 
