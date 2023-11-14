@@ -378,33 +378,31 @@ EOF
 ### 8.1 测试命令一：
  ```bash
 curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080 -H "Origin: http://www.bbb.com"
+kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080 -H "x-canary: true"
 ```
 返回结果：  
 ```bash
 HTTP/1.1 200 OK
-access-control-allow-credentials: true
-access-control-expose-headers: Content-Encoding,Kuma-Revision
-access-control-allow-origin: http://www.bbb.com
+x-canary: true
+content-length: 20
+connection: keep-alive
+
+Hi, I am PIPY-OK v2!
+```
+可以看到，如果请求头带有 x-canary: true， 那么响应头也带有 x-canary: true。  
+
+### 8.2 测试命令二：
+```bash
+curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080
+```
+返回结果：  
+```bash
+HTTP/1.1 200 OK
 content-length: 20
 connection: keep-alive
 
 Hi, I am PIPY-OK v1!
 ```
-### 8.2 测试命令二：
-```bash
-curl_client="$(kubectl get pod -n curl -l app=curl -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec ${curl_client} -n curl -c curl -- curl -ksi http://pipy-ok.pipy:8080 -H "Origin: http://www.bbb.com" -X OPTIONS
-```
-返回结果：  
-```bash
-HTTP/1.1 200 OK
-access-control-allow-origin: http://www.bbb.com
-access-control-allow-credentials: true
-access-control-expose-headers: Content-Encoding,Kuma-Revision
-access-control-allow-methods: POST,GET,PATCH,DELETE
-access-control-allow-headers: X-Foo-Bar-1
-access-control-max-age: 86400
-content-length: 0
-connection: keep-alive
-```
+可以看到，如果请求头没有 x-canary: true， 那么响应头也没有 x-canary: true。  
+
